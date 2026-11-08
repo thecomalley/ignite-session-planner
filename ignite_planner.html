@@ -126,52 +126,6 @@
         padding: 0;
         accent-color: var(--accent-2);
       }
-      .view-toggle {
-        display: inline-flex;
-        padding: 4px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--border);
-        gap: 4px;
-      }
-      .view-toggle button {
-        appearance: none;
-        border: 0;
-        border-radius: 999px;
-        background: transparent;
-        color: var(--muted);
-        padding: 8px 12px;
-        font: inherit;
-        cursor: pointer;
-      }
-      .view-toggle button.active {
-        background: rgba(124, 199, 255, 0.18);
-        color: var(--text);
-        box-shadow: inset 0 0 0 1px rgba(124, 199, 255, 0.22);
-      }
-      .location-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid var(--border);
-        color: var(--muted);
-        font: inherit;
-      }
-      .location-toggle input {
-        min-width: 0;
-        width: 16px;
-        height: 16px;
-        accent-color: var(--accent);
-      }
-      .summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 20px;
-      }
       .date-nav {
         display: flex;
         align-items: center;
@@ -220,34 +174,6 @@
       .session-warning[hidden] {
         display: none;
       }
-      .tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 18px;
-      }
-      .tab {
-        appearance: none;
-        border: 1px solid var(--border);
-        background: rgba(255,255,255,0.02);
-        color: var(--muted);
-        padding: 9px 14px;
-        border-radius: 999px;
-        cursor: pointer;
-        font: inherit;
-      }
-      .tab.active {
-        background: rgba(124, 199, 255, 0.12);
-        color: var(--text);
-        border-color: rgba(124, 199, 255, 0.4);
-      }
-      .pill {
-        background: rgba(124, 199, 255, 0.12);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 8px 12px;
-        color: var(--muted);
-      }
       .agenda {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -260,9 +186,6 @@
       .planner-main {
         min-width: 0;
       }
-      .planner-side {
-        display: none;
-      }
       .calendar-shell {
         width: 100%;
         min-width: 0;
@@ -272,22 +195,9 @@
         overflow: auto;
         background: rgba(19, 29, 51, 0.5);
       }
-      .calendar-shell.single-day {
-        min-width: 760px;
-      }
-      .calendar-header.single-day,
-      .calendar-body.single-day {
-        width: max-content;
-        min-width: 760px;
-      }
       .calendar-header,
       .calendar-body {
         display: grid;
-        grid-template-columns: 86px repeat(var(--day-count), minmax(220px, 1fr));
-      }
-      .calendar-header.single-day,
-      .calendar-body.single-day {
-        grid-template-columns: 86px 1fr;
       }
       .calendar-header {
         position: sticky;
@@ -382,12 +292,6 @@
         line-height: 1.1;
         white-space: nowrap;
       }
-      .time-selection-conflict {
-        font-size: 0.6rem;
-        font-weight: 700;
-        line-height: 1.1;
-        white-space: nowrap;
-      }
       .day-column {
         position: relative;
         min-height: calc(var(--row-count) * var(--row-height));
@@ -405,13 +309,13 @@
         position: absolute;
         z-index: 1;
         border-radius: 12px;
-        padding: 8px 10px;
+        padding: 4px 7px;
         background: rgba(19, 29, 51, 0.18);
         border: 1px solid rgba(124, 199, 255, 0.7);
         box-shadow: inset 0 0 0 1px rgba(124, 199, 255, 0.18);
         overflow: hidden;
-        min-width: 180px;
-        max-width: 320px;
+        min-width: 0;
+        max-width: none;
       }
       .event-block::before {
         content: "";
@@ -422,9 +326,13 @@
         pointer-events: none;
       }
       .event-block h4 {
-        margin: 0 0 6px;
-        font-size: 0.82rem;
-        line-height: 1.25;
+        margin: 2px 0 3px;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: var(--title-lines, 2);
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
       .event-block a {
         color: var(--text);
@@ -435,29 +343,12 @@
       }
       .event-block .event-meta {
         color: var(--muted);
-        font-size: 0.72rem;
-        line-height: 1.45;
-      }
-      .event-block {
-        min-width: 0;
-        max-width: none;
-        padding: 4px 7px;
-      }
-      .event-block h4 {
-        margin: 2px 0 3px;
-        font-size: 0.78rem;
-        line-height: 1.2;
-        display: -webkit-box;
-        -webkit-line-clamp: var(--title-lines, 2);
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      .event-block .event-meta {
         font-size: 0.66rem;
         line-height: 1.25;
-      }
-      .event-top {
-        font-size: 0.64rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
       }
       .event-block.has-conflict {
         box-shadow: inset 0 0 0 1px rgba(255, 179, 71, 0.28);
@@ -527,12 +418,6 @@
       .event-duration {
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
-      }
-      .event-block .event-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
       }
       .event-type {
         display: inline-flex;
@@ -628,9 +513,6 @@
         .calendar-body {
           min-width: 680px;
         }
-        .planner-layout {
-          grid-template-columns: 1fr;
-        }
       }
       /* Keep planning controls compact and let the calendar take the space. */
       .page { padding: 16px 16px 24px; }
@@ -715,6 +597,40 @@
       .filter-field .multi-select-filter { padding: 0; }
       .clear-filters { color: var(--muted); }
       .clear-filters[hidden], .short-label { display: none; }
+      .zoom-control {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.03);
+      }
+      .zoom-control button {
+        appearance: none;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        width: 26px;
+        height: 26px;
+        line-height: 1;
+        font: inherit;
+        cursor: pointer;
+      }
+      .zoom-control button:hover {
+        color: var(--text);
+        background: rgba(255,255,255,0.06);
+      }
+      .zoom-control input[type="range"] {
+        width: 90px;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
       .service-note, .session-warning { margin-bottom: 12px; }
       @media (max-width: 680px) {
         .page { padding: 12px 10px 24px; }
@@ -724,6 +640,7 @@
         .date-nav button, .date-nav select { padding-left: 5px; padding-right: 5px; }
         .selection-filter, .filter-panel > summary, .clear-filters { padding-left: 8px; padding-right: 8px; }
         .controls input[type="search"] { flex-basis: 100px; width: 100px; min-width: 100px; }
+        .zoom-control input[type="range"] { width: 64px; }
       }
     </style>
   </head>
@@ -769,6 +686,11 @@
           </div>
         </details>
         <button id="clear-filters" class="clear-filters" type="button" aria-label="Clear filters" hidden><span class="long-label">Clear filters</span><span class="short-label" aria-hidden="true">✕</span></button>
+        <div class="zoom-control" role="group" aria-label="Zoom calendar row height">
+          <button id="zoom-out" type="button" aria-label="Zoom out calendar">−</button>
+          <input id="zoom-slider" type="range" min="40" max="140" step="5" value="70" aria-label="Zoom calendar row height" />
+          <button id="zoom-in" type="button" aria-label="Zoom in calendar">+</button>
+        </div>
         </div>
       </div>
 
@@ -803,13 +725,37 @@
     <script>
       const SELECTED_SESSIONS_KEY = "ignite-planner-selected-sessions";
       const SELECTED_DATE_KEY = "ignite-planner-selected-date";
+      const ZOOM_KEY = "ignite-planner-zoom";
+      const ZOOM_MIN = 40;
+      const ZOOM_MAX = 140;
+      const ZOOM_STEP = 5;
+      const ZOOM_DEFAULT = 70;
+
+      function loadZoom() {
+        try {
+          const saved = Number.parseInt(localStorage.getItem(ZOOM_KEY), 10);
+          if (Number.isFinite(saved)) return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, saved));
+        } catch {
+          // fall through to default
+        }
+        return ZOOM_DEFAULT;
+      }
+
+      function saveZoom() {
+        try {
+          localStorage.setItem(ZOOM_KEY, String(state.zoom));
+        } catch (error) {
+          console.warn("Unable to save the zoom level in this browser.", error);
+        }
+      }
+
       const state = {
         sessions: [],
-        filtered: [],
         selectedDate: loadSelectedDate(),
         selectedSessions: loadSelectedSessions(),
         showSelectedOnly: false,
-        sortBy: "location"
+        sortBy: "location",
+        zoom: loadZoom()
       };
       const EVENT_TIMEZONE = "America/Los_Angeles";
       const SESSION_TYPE_COLORS = Object.freeze({
@@ -952,22 +898,6 @@
         return escapeHtml(value).replace(/\n/g, "&#10;");
       }
 
-      function formatInEventTime(value, options = {}) {
-        if (!value) return "TBA";
-        const d = new Date(value);
-        return new Intl.DateTimeFormat("en-US", {
-          timeZone: EVENT_TIMEZONE,
-          ...options
-        }).format(d);
-      }
-
-      function formatTime(value) {
-        return formatInEventTime(value, {
-          hour: "numeric",
-          minute: "2-digit"
-        });
-      }
-
       function formatClock(value) {
         if (!value) return "--:--";
         if (clockCache.has(value)) return clockCache.get(value);
@@ -977,15 +907,6 @@
         const clock = `${hour}:${minute}`;
         clockCache.set(value, clock);
         return clock;
-      }
-
-      function formatDay(value) {
-        if (!value) return "";
-        return formatInEventTime(value, {
-          weekday: "short",
-          month: "short",
-          day: "numeric"
-        });
       }
 
       function dateKeyToDate(dateKey) {
@@ -1000,25 +921,6 @@
           month: "short",
           day: "numeric"
         }).format(dateKeyToDate(dateKey));
-      }
-
-      function formatDayLong(dateKey) {
-        if (!dateKey) return "No date";
-        const d = dateKeyToDate(dateKey);
-        return new Intl.DateTimeFormat("en-US", {
-          timeZone: EVENT_TIMEZONE,
-          weekday: "long",
-          month: "long",
-          day: "numeric"
-        }).format(d);
-      }
-
-      function formatDuration(start, end) {
-        if (!start || !end) return "";
-        const s = new Date(start);
-        const e = new Date(end);
-        const mins = Math.max(0, (e - s) / 60000);
-        return `${Math.round(mins)} min`;
       }
 
       function formatDurationShort(start, end) {
@@ -1065,26 +967,6 @@
         if (!raw || raw === 'Location TBD') return 'Location TBD';
         const broad = raw.split('|')[0].trim();
         return broad || raw;
-      }
-
-      function formatDayHeader(dateString) {
-        const d = new Date(dateString);
-        const parts = new Intl.DateTimeFormat("en-US", {
-          timeZone: EVENT_TIMEZONE,
-          weekday: "short",
-          month: "short",
-          day: "numeric"
-        }).formatToParts(d);
-
-        const day = parts.find((part) => part.type === "weekday")?.value || "";
-        const month = parts.find((part) => part.type === "month")?.value || "";
-        const date = parts.find((part) => part.type === "day")?.value || "";
-        return `
-          <div>
-            <span>${day}</span>
-            <strong>${month} ${date}</strong>
-          </div>
-        `;
       }
 
       function formatTimeLabel(minutes) {
@@ -1274,7 +1156,7 @@
         const dayStart = Math.max(0, Math.floor(Math.min(...validMinutes) / 30) * 30 - 30);
         const dayEnd = Math.min(1440, Math.ceil(Math.max(...validMinutes) / 30) * 30 + 30);
         const slotSize = 30;
-        const rowHeight = 72;
+        const rowHeight = state.zoom;
         const rowCount = Math.max(8, Math.ceil((dayEnd - dayStart) / slotSize));
         const bodyHeight = rowCount * rowHeight;
 
@@ -1451,8 +1333,6 @@
         updateSessionCodeWarning();
         updateFilterControls();
         const filtered = getFilteredSessions();
-        state.filtered = filtered;
-
         updateDateSelector();
 
         positionFilterPanel();
@@ -1585,6 +1465,19 @@
       });
       document.getElementById("prev-day").addEventListener("click", () => changeSelectedDate(-1));
       document.getElementById("next-day").addEventListener("click", () => changeSelectedDate(1));
+
+      const zoomSlider = document.getElementById("zoom-slider");
+      zoomSlider.value = state.zoom;
+      function updateZoom(value, { persist = true } = {}) {
+        state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(value)));
+        zoomSlider.value = state.zoom;
+        if (persist) saveZoom();
+        renderPlanner();
+      }
+      zoomSlider.addEventListener("input", () => updateZoom(Number(zoomSlider.value), { persist: false }));
+      zoomSlider.addEventListener("change", saveZoom);
+      document.getElementById("zoom-out").addEventListener("click", () => updateZoom(state.zoom - ZOOM_STEP));
+      document.getElementById("zoom-in").addEventListener("click", () => updateZoom(state.zoom + ZOOM_STEP));
     </script>
   </body>
 </html>
