@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ignite Session Planner</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #131d33;
+        --panel-2: #192745;
+        --accent: #7cc7ff;
+        --accent-2: #8ef0c0;
+        --text: #edf3ff;
+        --muted: #b8c6df;
+        --border: rgba(255,255,255,0.12);
+        --chip: rgba(124, 199, 255, 0.18);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #142749 0%, #0b1020 45%, #070b13 100%);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 16px 60px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 3vw, 3rem);
+      }
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      input {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        padding: 10px 16px;
+        min-width: 280px;
+      }
+      .view-toggle {
+        display: inline-flex;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        gap: 4px;
+      }
+      .view-toggle button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .view-toggle button.active {
+        background: rgba(124, 199, 255, 0.18);
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(124, 199, 255, 0.22);
+      }
+      .location-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font: inherit;
+      }
+      .location-toggle input {
+        min-width: 0;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+      }
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .date-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 0 0 18px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+      }
+      .date-nav button,
+      .date-nav select {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.03);
+        color: var(--text);
+        font: inherit;
+        padding: 8px 12px;
+      }
+      .date-nav button {
+        cursor: pointer;
+      }
+      .date-nav select {
+        min-width: 210px;
+        text-align: center;
+      }
+      .selected-date-label {
+        font-weight: 700;
+        color: var(--text);
+        text-align: center;
+        min-width: 180px;
+      }
+      .service-note {
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(255, 178, 72, 0.12);
+        border: 1px solid rgba(255, 178, 72, 0.35);
+        color: var(--muted);
+        display: none;
+      }
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .tab {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        color: var(--muted);
+        padding: 9px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .tab.active {
+        background: rgba(124, 199, 255, 0.12);
+        color: var(--text);
+        border-color: rgba(124, 199, 255, 0.4);
+      }
+      .pill {
+        background: rgba(124, 199, 255, 0.12);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: var(--muted);
+      }
+      .agenda {
+        display: grid;
+        gap: 12px;
+      }
+      .planner-layout {
+        display: block;
+      }
+      .planner-main {
+        min-width: 0;
+      }
+      .planner-side {
+        display: none;
+      }
+      .ondemand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .calendar-shell {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        background: rgba(19, 29, 51, 0.5);
+        min-width: 1000px;
+      }
+      .calendar-shell.single-day {
+        min-width: 760px;
+      }
+      .calendar-header.single-day,
+      .calendar-body.single-day {
+        width: max-content;
+        min-width: 760px;
+      }
+      .calendar-header,
+      .calendar-body {
+        display: grid;
+        grid-template-columns: 86px repeat(var(--day-count), minmax(220px, 1fr));
+      }
+      .calendar-header.single-day,
+      .calendar-body.single-day {
+        grid-template-columns: 86px 1fr;
+      }
+      .calendar-header {
+        background: rgba(255,255,255,0.03);
+        border-bottom: 1px solid var(--border);
+      }
+      .calendar-body {
+        min-height: calc(var(--row-count) * 54px);
+      }
+      .corner,
+      .day-header,
+      .time-label {
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .corner {
+        min-height: 54px;
+        background: rgba(255,255,255,0.02);
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        padding: 0 8px 6px 0;
+      }
+      .day-header {
+        padding: 12px;
+        text-align: left;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .day-header strong {
+        display: block;
+        font-size: 1.05rem;
+        color: var(--text);
+      }
+      .time-gutter {
+        display: grid;
+        grid-template-rows: repeat(var(--row-count), 54px);
+        background: rgba(255,255,255,0.01);
+      }
+      .time-label {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 8px;
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .day-column {
+        position: relative;
+        min-height: calc(var(--row-count) * 54px);
+        background:
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.04) 0,
+            rgba(255,255,255,0.04) 1px,
+            transparent 1px,
+            transparent 54px
+          );
+        border-right: 1px solid var(--border);
+      }
+      .event-block {
+        position: absolute;
+        border-radius: 12px;
+        padding: 8px 10px;
+        background: rgba(19, 29, 51, 0.18);
+        border: 1px solid rgba(124, 199, 255, 0.7);
+        box-shadow: inset 0 0 0 1px rgba(124, 199, 255, 0.18);
+        overflow: hidden;
+        min-width: 180px;
+        max-width: 320px;
+      }
+      .event-block h4 {
+        margin: 0 0 6px;
+        font-size: 0.82rem;
+        line-height: 1.25;
+      }
+      .event-block a {
+        color: var(--text);
+        text-decoration: none;
+      }
+      .event-block a:hover {
+        text-decoration: underline;
+      }
+      .event-block .event-meta {
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+      .event-block {
+        min-width: 0;
+        max-width: none;
+        padding: 4px 7px;
+        transition: opacity 0.12s ease;
+      }
+      .event-block h4 {
+        margin: 2px 0 3px;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .event-block .event-meta {
+        font-size: 0.66rem;
+        line-height: 1.25;
+      }
+      .event-top {
+        font-size: 0.64rem;
+      }
+      .event-block.has-conflict {
+        box-shadow: inset 0 0 0 1px rgba(255, 179, 71, 0.28);
+      }
+      .event-block.is-clash {
+        box-shadow: inset 0 0 0 2px #ffb347, 0 4px 16px rgba(0, 0, 0, 0.35);
+        z-index: 4;
+      }
+      .event-block.is-active {
+        outline: 2px solid #ffffff;
+        outline-offset: 1px;
+        z-index: 5;
+      }
+      .event-block.is-dimmed {
+        opacity: 0.22;
+      }
+      .event-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 6px;
+        font-size: 0.68rem;
+        color: var(--muted);
+        line-height: 1.2;
+      }
+      .event-time {
+        color: var(--text);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .event-duration {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .event-block .event-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .event-clash {
+        color: #ffb347;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .event-block.compact {
+        padding: 4px 7px;
+      }
+      .event-block.compact h4 {
+        margin: 0;
+        font-size: 0.76rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        -webkit-line-clamp: 1;
+      }
+      .event-block.compact .event-meta {
+        display: none;
+      }
+      .event-block.compact.has-conflict::after {
+        content: "";
+        position: absolute;
+        right: 7px;
+        bottom: 6px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #ffb347;
+        box-shadow: 0 0 0 2px rgba(255, 179, 71, 0.18);
+      }
+      .building-count {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.7rem;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .corner-label {
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .calendar-hint {
+        margin: -4px 0 14px;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .time-row {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+      .time-label-list {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 10px;
+        text-align: center;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .sessions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .session {
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        min-height: 132px;
+      }
+      .session h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+        line-height: 1.35;
+      }
+      .session a {
+        color: var(--text);
+        text-decoration: none;
+      }
+      .session a:hover {
+        text-decoration: underline;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.9rem;
+        display: grid;
+        gap: 5px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .chip {
+        background: var(--chip);
+        border: 1px solid rgba(124, 199, 255, 0.2);
+        border-radius: 999px;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        color: var(--accent);
+      }
+      .empty {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        border: 1px dashed var(--border);
+        color: var(--muted);
+      }
+      @media (max-width: 820px) {
+        .calendar-shell {
+          overflow-x: auto;
+        }
+        .calendar-header,
+        .calendar-body {
+          min-width: 680px;
+        }
+        .planner-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 680px) {
+        .time-row { grid-template-columns: 1fr; }
+        input { min-width: 100%; }
+        .date-nav {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .selected-date-label {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="topbar">
+        <h1>Ignite session planner</h1>
+        <div class="controls">
+          <input id="search" type="search" placeholder="Filter by title, topic, or room" />
+        </div>
+      </div>
+
+      <div class="date-nav" aria-label="Day selector">
+        <button id="prev-day" type="button" aria-label="Previous day">← Prev</button>
+        <select id="date-selector" aria-label="Select a day"></select>
+        <div id="selected-date-label" class="selected-date-label">Loading…</div>
+        <button id="next-day" type="button" aria-label="Next day">Next →</button>
+      </div>
+
+      <div class="service-note" id="service-note">
+        Open this page from a local server such as http://localhost:8000/ignite_planner.html so the planner can load sessions.json.
+      </div>
+
+      <div class="summary">
+        <div class="pill" id="session-count">0 sessions</div>
+        <div class="pill" id="date-range">Loading…</div>
+      </div>
+
+      <div class="calendar-hint">Same time = direct conflict · Taller block = longer session · Buildings are grouped into columns</div>
+
+      <div id="agenda" class="agenda" aria-live="polite"></div>
+    </div>
+
+    <script>
+      const state = { sessions: [], filtered: [], selectedDate: null };
+      const EVENT_TIMEZONE = "America/Los_Angeles";
+
+      if (window.location.protocol === 'file:') {
+        document.getElementById('service-note').style.display = 'block';
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value).replace(/\n/g, "&#10;");
+      }
+
+      function formatInEventTime(value, options = {}) {
+        if (!value) return "TBA";
+        const d = new Date(value);
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: EVENT_TIMEZONE,
+          ...options
+        }).format(d);
+      }
+
+      function formatTime(value) {
+        return formatInEventTime(value, {
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      }
+
+      function formatClock(value) {
+        if (!value) return "--:--";
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: EVENT_TIMEZONE,
+          hour: "numeric",
+          minute: "2-digit"
+        }).formatToParts(new Date(value));
+        const hour = parts.find((part) => part.type === "hour")?.value || "";
+        const minute = parts.find((part) => part.type === "minute")?.value || "";
+        return `${hour}:${minute}`;
+      }
+
+      function formatDay(value) {
+        if (!value) return "";
+        return formatInEventTime(value, {
+          weekday: "short",
+          month: "short",
+          day: "numeric"
+        });
+      }
+
+      function dateKeyToDate(dateKey) {
+        const [year, month, day] = dateKey.split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day, 20));
+      }
+
+      function formatDayKey(dateKey) {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: EVENT_TIMEZONE,
+          weekday: "short",
+          month: "short",
+          day: "numeric"
+        }).format(dateKeyToDate(dateKey));
+      }
+
+      function formatDayLong(dateKey) {
+        if (!dateKey) return "No date";
+        const d = dateKeyToDate(dateKey);
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: EVENT_TIMEZONE,
+          weekday: "long",
+          month: "long",
+          day: "numeric"
+        }).format(d);
+      }
+
+      function formatDuration(start, end) {
+        if (!start || !end) return "";
+        const s = new Date(start);
+        const e = new Date(end);
+        const mins = Math.max(0, (e - s) / 60000);
+        return `${Math.round(mins)} min`;
+      }
+
+      function formatDurationShort(start, end) {
+        if (!start || !end) return "";
+        const mins = Math.max(0, Math.round((new Date(end) - new Date(start)) / 60000));
+        if (mins < 60) return `${mins}m`;
+        const hours = Math.floor(mins / 60);
+        const remainder = mins % 60;
+        return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+      }
+
+      function getEventParts(dateString) {
+        const d = new Date(dateString);
+        const parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: EVENT_TIMEZONE,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }).formatToParts(d);
+
+        const values = {};
+        for (const part of parts) {
+          if (part.type !== "literal") values[part.type] = part.value;
+        }
+
+        return {
+          year: values.year,
+          month: values.month,
+          day: values.day,
+          hour: Number(values.hour || 0),
+          minute: Number(values.minute || 0)
+        };
+      }
+
+      function getEventDateKey(dateString) {
+        const { year, month, day } = getEventParts(dateString);
+        return `${year}-${month}-${day}`;
+      }
+
+      function getMinutesFromDayStart(dateString) {
+        const { hour, minute } = getEventParts(dateString);
+        return hour * 60 + minute;
+      }
+
+      function getBroadLocation(locationValue) {
+        const raw = (locationValue || 'Location TBD').trim();
+        if (!raw || raw === 'Location TBD') return 'Location TBD';
+        const broad = raw.split('|')[0].trim();
+        return broad || raw;
+      }
+
+      function formatDayHeader(dateString) {
+        const d = new Date(dateString);
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: EVENT_TIMEZONE,
+          weekday: "short",
+          month: "short",
+          day: "numeric"
+        }).formatToParts(d);
+
+        const day = parts.find((part) => part.type === "weekday")?.value || "";
+        const month = parts.find((part) => part.type === "month")?.value || "";
+        const date = parts.find((part) => part.type === "day")?.value || "";
+        return `
+          <div>
+            <span>${day}</span>
+            <strong>${month} ${date}</strong>
+          </div>
+        `;
+      }
+
+      function formatHourLabel(minutes) {
+        const hour = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const label = new Date(Date.UTC(2020, 0, 1, hour, minute));
+        return new Intl.DateTimeFormat("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "UTC"
+        }).format(label);
+      }
+
+      function getScheduledDates(sessions) {
+        return [...new Set(sessions
+          .filter((session) => session.start)
+          .map((session) => getEventDateKey(session.start))
+          .filter(Boolean))]
+          .sort();
+      }
+
+      function ensureSelectedDate(sessions) {
+        const dates = getScheduledDates(sessions);
+        if (!dates.length) {
+          state.selectedDate = null;
+          return;
+        }
+
+        if (!state.selectedDate || !dates.includes(state.selectedDate)) {
+          state.selectedDate = dates[0];
+        }
+      }
+
+      function updateDateSelector() {
+        const selector = document.getElementById("date-selector");
+        const dates = getScheduledDates(state.sessions);
+
+        if (!dates.length) {
+          selector.innerHTML = '<option value="">No dates</option>';
+          selector.disabled = true;
+          document.getElementById("selected-date-label").textContent = "No scheduled sessions";
+          return;
+        }
+
+        ensureSelectedDate(state.sessions);
+        selector.disabled = false;
+        selector.innerHTML = dates.map((date) => `<option value="${date}">${formatDayKey(date)}</option>`).join('');
+        selector.value = state.selectedDate;
+        document.getElementById("selected-date-label").textContent = formatDayLong(state.selectedDate);
+      }
+
+      function updateDateRangeText() {
+        const validDates = state.filtered.map((session) => session.start).filter(Boolean);
+        if (!validDates.length) {
+          document.getElementById("date-range").textContent = "No sessions";
+          return;
+        }
+
+        if (state.selectedDate) {
+          document.getElementById("date-range").textContent = `Showing times in Pacific Time (PT) • ${formatDayLong(state.selectedDate)}`;
+          return;
+        }
+
+        const minDate = new Date(Math.min(...validDates.map((v) => new Date(v).getTime())));
+        const maxDate = new Date(Math.max(...validDates.map((v) => new Date(v).getTime())));
+        document.getElementById("date-range").textContent = `Showing times in Pacific Time (PT) • ${formatDay(minDate.toISOString())} → ${formatDay(maxDate.toISOString())}`;
+      }
+
+      function matchesSearch(session, searchTerm) {
+        if (!searchTerm) return true;
+        const haystack = [
+          session.title || "",
+          session.location || "",
+          session.tags ? session.tags.join(" ") : "",
+          session.metadata ? session.metadata.join(" ") : "",
+          session.eyebrow || "",
+          session.abstract || "",
+          session.sessionType || "",
+          session.speakerNames || ""
+        ].join(" ").toLowerCase();
+        return haystack.includes(searchTerm);
+      }
+
+      function getFilteredSessions() {
+        const searchTerm = document.getElementById("search").value.trim().toLowerCase();
+        return state.sessions.filter((session) => matchesSearch(session, searchTerm));
+      }
+
+      function renderSessionCard(session) {
+        return `
+          <article class="session">
+            <h3><a href="${session.url || '#'}" target="_blank" rel="noreferrer">${session.title}</a></h3>
+            <div class="meta">
+              <span>${formatTime(session.start)} - ${formatTime(session.end)}</span>
+              <span>${session.location || 'Location TBD'}</span>
+              <span>${session.date || formatDay(session.start)} • ${formatDuration(session.start, session.end)}</span>
+            </div>
+            <div class="chips">
+              ${(session.tags || []).slice(0, 4).map((tag) => `<span class="chip">${tag}</span>`).join('')}
+            </div>
+          </article>
+        `;
+      }
+
+      function buildCalendarViewFor(scheduled) {
+        const daySessions = scheduled
+          .filter((session) => state.selectedDate ? getEventDateKey(session.start) === state.selectedDate : true)
+          .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        if (!daySessions.length) {
+          return '<div class="empty">No sessions scheduled for the selected day.</div>';
+        }
+
+        const validMinutes = daySessions.flatMap((session) => {
+          const effectiveEnd = session.end || session.start;
+          return [getMinutesFromDayStart(session.start), getMinutesFromDayStart(effectiveEnd)];
+        });
+
+        const dayStart = Math.max(0, Math.floor(Math.min(...validMinutes) / 30) * 30 - 30);
+        const dayEnd = Math.min(1440, Math.ceil(Math.max(...validMinutes) / 30) * 30 + 30);
+        const slotSize = 30;
+        const rowHeight = 54;
+        const rowCount = Math.max(8, Math.ceil((dayEnd - dayStart) / slotSize));
+        const bodyHeight = rowCount * rowHeight;
+
+        const sessionIndex = new Map(daySessions.map((session, index) => [session, index]));
+        const conflicts = new Map(daySessions.map((_, index) => [index, []]));
+        for (let i = 0; i < daySessions.length; i += 1) {
+          const a = daySessions[i];
+          const aStart = new Date(a.start).getTime();
+          const aEnd = new Date(a.end || a.start).getTime();
+          for (let j = i + 1; j < daySessions.length; j += 1) {
+            const b = daySessions[j];
+            const bStart = new Date(b.start).getTime();
+            const bEnd = new Date(b.end || b.start).getTime();
+            if (aStart < bEnd && bStart < aEnd) {
+              conflicts.get(i).push(j);
+              conflicts.get(j).push(i);
+            }
+          }
+        }
+
+        const buildings = new Map();
+        for (const session of daySessions) {
+          const building = getBroadLocation(session.location);
+          if (!buildings.has(building)) buildings.set(building, []);
+          buildings.get(building).push(session);
+        }
+
+        const laneWidth = 170;
+        const buildingPlans = [...buildings.entries()]
+          .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+          .map(([name, sessions]) => {
+            const laneEnds = [];
+            const laneMap = new Map();
+            for (const session of sessions) {
+              const start = new Date(session.start).getTime();
+              const end = new Date(session.end || session.start).getTime();
+              let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
+              if (lane === -1) {
+                lane = laneEnds.length;
+                laneEnds.push(end);
+              } else {
+                laneEnds[lane] = end;
+              }
+              laneMap.set(session, lane);
+            }
+            const laneCount = Math.max(1, laneEnds.length);
+            return {
+              name,
+              sessions,
+              laneMap,
+              laneCount,
+              width: Math.max(240, laneCount * laneWidth + 32)
+            };
+          });
+
+        const totalWidth = 86 + buildingPlans.reduce((sum, plan) => sum + plan.width, 0);
+        const gridColumns = `86px ${buildingPlans.map((plan) => `${plan.width}px`).join(' ')}`;
+
+        const timeLabels = Array.from({ length: rowCount }, (_, index) => {
+          const minutes = dayStart + index * slotSize;
+          return `<div class="time-label">${minutes % 60 === 0 ? formatHourLabel(minutes) : ''}</div>`;
+        }).join('');
+
+        const headerColumns = buildingPlans.map((plan) => `
+          <div class="day-header">
+            <strong>${escapeHtml(plan.name)}</strong>
+            <span class="building-count">${plan.sessions.length} session${plan.sessions.length === 1 ? '' : 's'}</span>
+          </div>
+        `).join('');
+
+        const columns = buildingPlans.map((plan) => {
+          const blocks = plan.sessions.map((session) => {
+            const startMinutes = getMinutesFromDayStart(session.start);
+            const endMinutes = getMinutesFromDayStart(session.end || session.start);
+            const top = ((startMinutes - dayStart) / slotSize) * rowHeight;
+            const height = Math.max(44, ((endMinutes - startMinutes) / slotSize) * rowHeight - 2);
+            const lane = plan.laneMap.get(session) || 0;
+            const left = 8 + lane * laneWidth;
+            const width = plan.laneCount === 1 ? plan.width - 16 : laneWidth - 10;
+            const index = sessionIndex.get(session);
+            const clashes = conflicts.get(index) || [];
+            const clashTitles = clashes.slice(0, 3).map((clashIndex) => daySessions[clashIndex].title).join('; ');
+            const sessionType = session.sessionType || session.eyebrow || 'Session';
+            const tooltip = [
+              session.title,
+              `${formatTime(session.start)}–${formatTime(session.end)} (${formatDuration(session.start, session.end)})`,
+              session.location || 'Location TBD',
+              clashes.length ? `Conflicts with ${clashes.length}: ${clashTitles}${clashes.length > 3 ? '…' : ''}` : 'No direct conflicts'
+            ].join('\n');
+            return `
+              <article class="event-block${clashes.length ? ' has-conflict' : ''}${height < 64 ? ' compact' : ''}" data-start="${new Date(session.start).getTime()}" data-end="${new Date(session.end || session.start).getTime()}" style="top:${top}px;height:${height}px;left:${left}px;width:${width}px;" title="${escapeAttr(tooltip)}">
+                <div class="event-top">
+                  <span class="event-time">${formatClock(session.start)}–${formatClock(session.end)}</span>
+                  <span class="event-duration">${formatDurationShort(session.start, session.end)}</span>
+                </div>
+                <h4><a href="${escapeAttr(session.url || '#')}" target="_blank" rel="noreferrer">${escapeHtml(session.title)}</a></h4>
+                <div class="event-meta">
+                  <span>${escapeHtml(sessionType)}</span>
+                  ${clashes.length ? `<span class="event-clash">⚡ ${clashes.length}</span>` : ''}
+                </div>
+              </article>
+            `;
+          }).join('');
+          return `<div class="day-column" style="width:${plan.width}px;height:${bodyHeight}px;">${blocks}</div>`;
+        }).join('');
+
+        return `
+          <div class="calendar-shell" style="width:${totalWidth}px;min-width:0;--row-count:${rowCount};">
+            <div class="calendar-header" style="width:${totalWidth}px;grid-template-columns:${gridColumns};">
+              <div class="corner"><span class="corner-label">PT</span></div>
+              ${headerColumns}
+            </div>
+            <div class="calendar-body" style="width:${totalWidth}px;height:${bodyHeight}px;grid-template-columns:${gridColumns};">
+              <div class="time-gutter" style="height:${bodyHeight}px;">${timeLabels}</div>
+              ${columns}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderUnscheduledSessions(filtered) {
+        const unscheduled = filtered.filter((session) => !session.start || !session.end);
+        if (!unscheduled.length) return "";
+
+        return `
+          <div class="time-row">
+            <div class="time-label-list">On-demand</div>
+            <div class="ondemand-grid">
+              ${unscheduled.map((session) => `
+                <article class="session">
+                  <h3><a href="${session.url || '#'}" target="_blank" rel="noreferrer">${session.title}</a></h3>
+                  <div class="meta">
+                    <span>Unscheduled</span>
+                    <span>${session.location || 'Location TBD'}</span>
+                    <span>${session.sessionType || 'On-demand'}</span>
+                  </div>
+                  <div class="chips">
+                    ${(session.tags || []).slice(0, 4).map((tag) => `<span class="chip">${tag}</span>`).join('')}
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderPlanner() {
+        const filtered = getFilteredSessions();
+        state.filtered = filtered;
+
+        ensureSelectedDate(filtered);
+        updateDateSelector();
+
+        const scheduled = filtered.filter((session) => session.start && session.end);
+        const daySessions = state.selectedDate
+          ? scheduled.filter((session) => getEventDateKey(session.start) === state.selectedDate)
+          : [];
+        document.getElementById("session-count").textContent = `${daySessions.length} session${daySessions.length === 1 ? "" : "s"}`;
+
+        if (!scheduled.length) {
+          document.getElementById("agenda").innerHTML = '<div class="empty">No scheduled sessions match the current filter.</div>';
+          document.getElementById("date-range").textContent = "No scheduled sessions";
+          return;
+        }
+
+        const calendarHtml = buildCalendarViewFor(scheduled);
+        const unscheduledHtml = renderUnscheduledSessions(filtered);
+        document.getElementById("agenda").innerHTML = `
+          <div class="planner-layout">
+            <div class="planner-main">${calendarHtml}</div>
+          </div>
+          ${unscheduledHtml ? `<div style="margin-top: 18px;">${unscheduledHtml}</div>` : ""}
+        `;
+        updateDateRangeText();
+      }
+
+      function changeSelectedDate(delta) {
+        const dates = getScheduledDates(state.sessions);
+        if (!dates.length) return;
+
+        ensureSelectedDate(state.sessions);
+        const index = dates.indexOf(state.selectedDate);
+        const nextIndex = Math.max(0, Math.min(dates.length - 1, index + delta));
+        state.selectedDate = dates[nextIndex];
+        renderPlanner();
+      }
+
+      function clearConflictHighlight() {
+        document.querySelectorAll(".event-block.is-clash, .event-block.is-active, .event-block.is-dimmed").forEach((block) => {
+          block.classList.remove("is-clash", "is-active", "is-dimmed");
+        });
+      }
+
+      function highlightConflicts(block) {
+        const start = Number(block.dataset.start);
+        const end = Number(block.dataset.end);
+        document.querySelectorAll(".event-block").forEach((candidate) => {
+          const candidateStart = Number(candidate.dataset.start);
+          const candidateEnd = Number(candidate.dataset.end);
+          const overlaps = candidateStart < end && start < candidateEnd;
+          candidate.classList.toggle("is-active", candidate === block);
+          candidate.classList.toggle("is-clash", candidate !== block && overlaps);
+          candidate.classList.toggle("is-dimmed", !overlaps);
+        });
+      }
+
+      fetch('sessions.json')
+        .then((response) => response.json())
+        .then((sessions) => {
+          state.sessions = sessions.filter((s) => s.title);
+          ensureSelectedDate(state.sessions);
+          updateDateSelector();
+          renderPlanner();
+        })
+        .catch((error) => {
+          document.getElementById("agenda").innerHTML = `
+            <div class="empty">
+              Unable to load sessions.json. Open the page from a local server, e.g. http://localhost:8000/ignite_planner.html.
+            </div>
+          `;
+          console.error(error);
+        });
+
+      document.getElementById("search").addEventListener("input", renderPlanner);
+
+      const agendaElement = document.getElementById("agenda");
+      agendaElement.addEventListener("mouseover", (event) => {
+        const block = event.target.closest(".event-block");
+        if (block) highlightConflicts(block);
+      });
+      agendaElement.addEventListener("mouseout", (event) => {
+        const block = event.target.closest(".event-block");
+        if (!block) return;
+        if (event.relatedTarget && block.contains(event.relatedTarget)) return;
+        clearConflictHighlight();
+      });
+
+      document.getElementById("date-selector").addEventListener("change", (event) => {
+        state.selectedDate = event.target.value;
+        renderPlanner();
+      });
+      document.getElementById("prev-day").addEventListener("click", () => changeSelectedDate(-1));
+      document.getElementById("next-day").addEventListener("click", () => changeSelectedDate(1));
+    </script>
+  </body>
+</html>
