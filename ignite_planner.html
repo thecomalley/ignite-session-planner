@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
     <title>Ignite Session Planner</title>
     <style>
       :root {
@@ -302,8 +303,11 @@
         border-bottom: 1px solid var(--border);
       }
       .corner {
+        position: sticky;
+        left: 0;
+        z-index: 3;
         min-height: 54px;
-        background: rgba(255,255,255,0.02);
+        background: var(--panel);
         display: flex;
         flex-direction: column;
         align-items: flex-end;
@@ -322,9 +326,12 @@
         color: var(--text);
       }
       .time-gutter {
+        position: sticky;
+        left: 0;
+        z-index: 2;
         display: grid;
         grid-template-rows: repeat(var(--row-count), 54px);
-        background: rgba(255,255,255,0.01);
+        background: var(--panel);
       }
       .time-label {
         display: flex;
@@ -772,6 +779,26 @@
       <div id="agenda" class="agenda" aria-live="polite"></div>
     </div>
 
+    <script>
+      const APPLICATION_INSIGHTS_CONNECTION_STRING = "YOUR_CONNECTION_STRING";
+
+      if (APPLICATION_INSIGHTS_CONNECTION_STRING !== "YOUR_CONNECTION_STRING") {
+        const appInsightsScript = document.createElement("script");
+        appInsightsScript.src = "https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js";
+        appInsightsScript.crossOrigin = "anonymous";
+        appInsightsScript.onload = () => {
+          const appInsights = new Microsoft.ApplicationInsights.ApplicationInsights({
+            config: { connectionString: APPLICATION_INSIGHTS_CONNECTION_STRING }
+          });
+          appInsights.loadAppInsights();
+          appInsights.trackPageView();
+        };
+        appInsightsScript.onerror = () => {
+          console.warn("Unable to load the Application Insights SDK.");
+        };
+        document.head.appendChild(appInsightsScript);
+      }
+    </script>
     <script>
       const SELECTED_SESSIONS_KEY = "ignite-planner-selected-sessions";
       const SELECTED_DATE_KEY = "ignite-planner-selected-date";

@@ -4,6 +4,10 @@ The [Microsoft Session Catalog](https://ignite.microsoft.com/en-US/sessions) did
 
 ![Ignite session planner showing Tuesday's schedule](assets/ignite-planner-tuesday.png)
 
+## Analytics
+
+The planner can send page views and JavaScript exception telemetry to Azure Application Insights. To enable it, create an Application Insights resource and replace `YOUR_CONNECTION_STRING` in `ignite_planner.html` with the resource's connection string. Until configured, the SDK is not loaded and no analytics data is sent. The connection string is used by this browser app and is not a secret.
+
 ## License
 
 This project is released into the public domain under the [Unlicense](LICENSE).
