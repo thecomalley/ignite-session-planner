@@ -760,10 +760,11 @@
 
     <script>
       const SELECTED_SESSIONS_KEY = "ignite-planner-selected-sessions";
+      const SELECTED_DATE_KEY = "ignite-planner-selected-date";
       const state = {
         sessions: [],
         filtered: [],
-        selectedDate: null,
+        selectedDate: loadSelectedDate(),
         selectedSessions: loadSelectedSessions(),
         showSelectedOnly: false,
         sortBy: "location"
@@ -814,6 +815,26 @@
           return new Set(Array.isArray(saved) ? saved.map(String) : []);
         } catch {
           return new Set();
+        }
+      }
+
+      function loadSelectedDate() {
+        try {
+          return localStorage.getItem(SELECTED_DATE_KEY);
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSelectedDate() {
+        try {
+          if (state.selectedDate) {
+            localStorage.setItem(SELECTED_DATE_KEY, state.selectedDate);
+          } else {
+            localStorage.removeItem(SELECTED_DATE_KEY);
+          }
+        } catch (error) {
+          console.warn("Unable to save the selected date in this browser.", error);
         }
       }
 
@@ -1040,14 +1061,19 @@
       }
 
       function ensureSelectedDate(sessions) {
+        const previousDate = state.selectedDate;
         const dates = getScheduledDates(sessions);
         if (!dates.length) {
           state.selectedDate = null;
+          if (previousDate !== null) saveSelectedDate();
           return;
         }
 
         if (!state.selectedDate || !dates.includes(state.selectedDate)) {
           state.selectedDate = dates[0];
+        }
+        if (state.selectedDate !== previousDate) {
+          saveSelectedDate();
         }
       }
 
