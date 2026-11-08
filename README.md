@@ -6,13 +6,12 @@ A lightweight browser-based planner for Microsoft Ignite sessions. The project t
 
 - One calendar view only, with prev/next day navigation
 - Time-based schedule grid in Pacific Time
-- Search/filter control for titles, topics, room names, and metadata
+- Search/filter control for scheduled sessions by title, topics, room names, metadata, and session type
 - Sessions grouped permanently into one column per broad venue (for example, Marriott Marquis instead of a full room label like Marriott Marquis | Lower B2)
-- Direct time conflicts shown on the blocks themselves: a session that overlaps another gets an amber clash count
+- Each 30-minute time slot shows the number of filtered sessions running during that interval
 - Hovering a session highlights every session it overlaps and dims the rest, so direct conflicts are obvious
 - Block height and a duration label on each session show how long it runs
 - Overlapping sessions inside a venue sit side by side in lanes instead of covering each other
-- On-demand and unscheduled sessions listed separately below the calendar
 - Horizontal scrolling when the schedule is crowded, to preserve calendar readability without crushing the layout
 
 ## Project files
@@ -25,7 +24,7 @@ A lightweight browser-based planner for Microsoft Ignite sessions. The project t
 
 The app loads `sessions.json` in the browser and builds a filtered daily schedule from the records it contains. It normalizes times into Pacific Time, groups sessions by their selected date, and renders them as event blocks over a time grid.
 
-Each broad venue becomes a column, and sessions that overlap in time are laid out in lanes within that column. The calendar computes conflicts across all sessions on the selected day, so each block knows how many other sessions it overlaps with. Hovering a block highlights those overlaps and dims everything else. The venue grouping logic uses the first section of a location string before a pipe, which keeps high-level planning readable without getting lost in exact-room granularity.
+Each broad venue becomes a column, and sessions that overlap in time are laid out in lanes within that column. Every 30-minute time-gutter row shows the number of filtered sessions running during that interval. Hovering a block highlights its direct conflicts and dims everything else, while its tooltip lists the overlapping sessions. The venue grouping logic uses the first section of a location string before a pipe, which keeps high-level planning readable without getting lost in exact-room granularity.
 
 ## Running it locally
 

@@ -14,7 +14,6 @@
         --text: #edf3ff;
         --muted: #b8c6df;
         --border: rgba(255,255,255,0.12);
-        --chip: rgba(124, 199, 255, 0.18);
       }
       * { box-sizing: border-box; }
       body {
@@ -45,13 +44,19 @@
         flex-wrap: wrap;
         align-items: center;
       }
-      input {
+      input,
+      .controls select {
         background: rgba(255,255,255,0.04);
         border: 1px solid var(--border);
         border-radius: 999px;
         color: var(--text);
         padding: 10px 16px;
         min-width: 280px;
+        font: inherit;
+      }
+      .controls select {
+        color-scheme: dark;
+        cursor: pointer;
       }
       .view-toggle {
         display: inline-flex;
@@ -183,11 +188,6 @@
       .planner-side {
         display: none;
       }
-      .ondemand-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 12px;
-      }
       .calendar-shell {
         border: 1px solid var(--border);
         border-radius: 18px;
@@ -252,11 +252,23 @@
       }
       .time-label {
         display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 8px;
-        font-size: 0.75rem;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 5px 2px;
+        font-size: 0.72rem;
+        text-align: center;
         color: var(--muted);
+      }
+      .time-label-time {
+        color: var(--text);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .time-session-count {
+        font-size: 0.64rem;
+        line-height: 1.15;
+        white-space: nowrap;
       }
       .day-column {
         position: relative;
@@ -359,11 +371,6 @@
         justify-content: space-between;
         gap: 6px;
       }
-      .event-clash {
-        color: #ffb347;
-        font-weight: 700;
-        white-space: nowrap;
-      }
       .event-block.compact {
         padding: 4px 7px;
       }
@@ -405,65 +412,6 @@
         font-size: 0.8rem;
         color: var(--muted);
       }
-      .time-row {
-        display: grid;
-        grid-template-columns: 110px 1fr;
-        gap: 14px;
-        align-items: start;
-      }
-      .time-label-list {
-        background: rgba(255,255,255,0.02);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px 10px;
-        text-align: center;
-        color: var(--muted);
-        font-weight: 600;
-      }
-      .sessions {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 12px;
-      }
-      .session {
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 12px 14px;
-        min-height: 132px;
-      }
-      .session h3 {
-        margin: 0 0 8px;
-        font-size: 1rem;
-        line-height: 1.35;
-      }
-      .session a {
-        color: var(--text);
-        text-decoration: none;
-      }
-      .session a:hover {
-        text-decoration: underline;
-      }
-      .meta {
-        color: var(--muted);
-        font-size: 0.9rem;
-        display: grid;
-        gap: 5px;
-      }
-      .chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 10px;
-      }
-      .chip {
-        background: var(--chip);
-        border: 1px solid rgba(124, 199, 255, 0.2);
-        border-radius: 999px;
-        padding: 5px 8px;
-        font-size: 0.75rem;
-        color: var(--accent);
-      }
       .empty {
         margin-top: 20px;
         padding: 20px;
@@ -485,8 +433,8 @@
         }
       }
       @media (max-width: 680px) {
-        .time-row { grid-template-columns: 1fr; }
-        input { min-width: 100%; }
+        input,
+        .controls select { min-width: 100%; }
         .date-nav {
           flex-wrap: wrap;
           justify-content: center;
@@ -504,6 +452,9 @@
         <h1>Ignite session planner</h1>
         <div class="controls">
           <input id="search" type="search" placeholder="Filter by title, topic, or room" />
+          <select id="session-type-filter" aria-label="Filter by session type">
+            <option value="">All session types</option>
+          </select>
         </div>
       </div>
 
@@ -691,7 +642,7 @@
         `;
       }
 
-      function formatHourLabel(minutes) {
+      function formatTimeLabel(minutes) {
         const hour = Math.floor(minutes / 60);
         const minute = minutes % 60;
         const label = new Date(Date.UTC(2020, 0, 1, hour, minute));
@@ -772,25 +723,32 @@
         return haystack.includes(searchTerm);
       }
 
-      function getFilteredSessions() {
-        const searchTerm = document.getElementById("search").value.trim().toLowerCase();
-        return state.sessions.filter((session) => matchesSearch(session, searchTerm));
+      function populateSessionTypeFilter() {
+        const select = document.getElementById("session-type-filter");
+        const sessionTypes = [...new Set(state.sessions
+          .filter((session) => session.start && session.end)
+          .map((session) => (session.sessionType || "").trim())
+          .filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b));
+
+        select.replaceChildren(new Option("All session types", ""));
+        sessionTypes.forEach((sessionType) => select.add(new Option(sessionType, sessionType)));
       }
 
-      function renderSessionCard(session) {
-        return `
-          <article class="session">
-            <h3><a href="${session.url || '#'}" target="_blank" rel="noreferrer">${session.title}</a></h3>
-            <div class="meta">
-              <span>${formatTime(session.start)} - ${formatTime(session.end)}</span>
-              <span>${session.location || 'Location TBD'}</span>
-              <span>${session.date || formatDay(session.start)} • ${formatDuration(session.start, session.end)}</span>
-            </div>
-            <div class="chips">
-              ${(session.tags || []).slice(0, 4).map((tag) => `<span class="chip">${tag}</span>`).join('')}
-            </div>
-          </article>
-        `;
+      function getFilteredSessions() {
+        const searchTerm = document.getElementById("search").value.trim().toLowerCase();
+        const selectedType = document.getElementById("session-type-filter").value;
+        return state.sessions.filter((session) =>
+          session.start && session.end &&
+          (!selectedType || (session.sessionType || "").trim() === selectedType) &&
+          matchesSearch(session, searchTerm)
+        );
+      }
+
+      function getSessionUrl(session) {
+        return session.sessionCode
+          ? `https://ignite.microsoft.com/en-US/sessions/${encodeURIComponent(session.sessionCode)}`
+          : session.url || "#";
       }
 
       function buildCalendarViewFor(scheduled) {
@@ -840,7 +798,10 @@
 
         const laneWidth = 170;
         const buildingPlans = [...buildings.entries()]
-          .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+          .sort((a, b) => {
+            const priority = (name) => name === "Chase Center" ? 0 : 1;
+            return priority(a[0]) - priority(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]);
+          })
           .map(([name, sessions]) => {
             const laneEnds = [];
             const laneMap = new Map();
@@ -871,7 +832,13 @@
 
         const timeLabels = Array.from({ length: rowCount }, (_, index) => {
           const minutes = dayStart + index * slotSize;
-          return `<div class="time-label">${minutes % 60 === 0 ? formatHourLabel(minutes) : ''}</div>`;
+          const sessionCount = daySessions.filter((session) => {
+            const start = getMinutesFromDayStart(session.start);
+            const end = getMinutesFromDayStart(session.end || session.start);
+            return start < minutes + slotSize && end > minutes;
+          }).length;
+          const countLabel = `${sessionCount} session${sessionCount === 1 ? '' : 's'}`;
+          return `<div class="time-label"><span class="time-label-time">${formatTimeLabel(minutes)}</span><span class="time-session-count">${countLabel}</span></div>`;
         }).join('');
 
         const headerColumns = buildingPlans.map((plan) => `
@@ -906,10 +873,9 @@
                   <span class="event-time">${formatClock(session.start)}–${formatClock(session.end)}</span>
                   <span class="event-duration">${formatDurationShort(session.start, session.end)}</span>
                 </div>
-                <h4><a href="${escapeAttr(session.url || '#')}" target="_blank" rel="noreferrer">${escapeHtml(session.title)}</a></h4>
+                <h4><a href="${escapeAttr(getSessionUrl(session))}" target="_blank" rel="noreferrer">${escapeHtml(session.title)}</a></h4>
                 <div class="event-meta">
                   <span>${escapeHtml(sessionType)}</span>
-                  ${clashes.length ? `<span class="event-clash">⚡ ${clashes.length}</span>` : ''}
                 </div>
               </article>
             `;
@@ -931,32 +897,6 @@
         `;
       }
 
-      function renderUnscheduledSessions(filtered) {
-        const unscheduled = filtered.filter((session) => !session.start || !session.end);
-        if (!unscheduled.length) return "";
-
-        return `
-          <div class="time-row">
-            <div class="time-label-list">On-demand</div>
-            <div class="ondemand-grid">
-              ${unscheduled.map((session) => `
-                <article class="session">
-                  <h3><a href="${session.url || '#'}" target="_blank" rel="noreferrer">${session.title}</a></h3>
-                  <div class="meta">
-                    <span>Unscheduled</span>
-                    <span>${session.location || 'Location TBD'}</span>
-                    <span>${session.sessionType || 'On-demand'}</span>
-                  </div>
-                  <div class="chips">
-                    ${(session.tags || []).slice(0, 4).map((tag) => `<span class="chip">${tag}</span>`).join('')}
-                  </div>
-                </article>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }
-
       function renderPlanner() {
         const filtered = getFilteredSessions();
         state.filtered = filtered;
@@ -964,25 +904,22 @@
         ensureSelectedDate(filtered);
         updateDateSelector();
 
-        const scheduled = filtered.filter((session) => session.start && session.end);
         const daySessions = state.selectedDate
-          ? scheduled.filter((session) => getEventDateKey(session.start) === state.selectedDate)
+          ? filtered.filter((session) => getEventDateKey(session.start) === state.selectedDate)
           : [];
         document.getElementById("session-count").textContent = `${daySessions.length} session${daySessions.length === 1 ? "" : "s"}`;
 
-        if (!scheduled.length) {
+        if (!filtered.length) {
           document.getElementById("agenda").innerHTML = '<div class="empty">No scheduled sessions match the current filter.</div>';
           document.getElementById("date-range").textContent = "No scheduled sessions";
           return;
         }
 
-        const calendarHtml = buildCalendarViewFor(scheduled);
-        const unscheduledHtml = renderUnscheduledSessions(filtered);
+        const calendarHtml = buildCalendarViewFor(filtered);
         document.getElementById("agenda").innerHTML = `
           <div class="planner-layout">
             <div class="planner-main">${calendarHtml}</div>
           </div>
-          ${unscheduledHtml ? `<div style="margin-top: 18px;">${unscheduledHtml}</div>` : ""}
         `;
         updateDateRangeText();
       }
@@ -1021,6 +958,7 @@
         .then((response) => response.json())
         .then((sessions) => {
           state.sessions = sessions.filter((s) => s.title);
+          populateSessionTypeFilter();
           ensureSelectedDate(state.sessions);
           updateDateSelector();
           renderPlanner();
@@ -1035,6 +973,7 @@
         });
 
       document.getElementById("search").addEventListener("input", renderPlanner);
+      document.getElementById("session-type-filter").addEventListener("change", renderPlanner);
 
       const agendaElement = document.getElementById("agenda");
       agendaElement.addEventListener("mouseover", (event) => {

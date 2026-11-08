@@ -80,13 +80,18 @@ def normalize_session(raw: dict[str, Any]) -> dict[str, Any] | None:
     content_areas = [get_display_value(item) for item in raw.get("contentArea") or []]
     metadata = [piece for piece in [session_type, location, speaker_names, *content_areas] if piece]
 
-    session_id = raw.get("sessionId") or raw.get("sessionCode") or raw.get("localizedId") or raw.get("title")
-    url = "https://ignite.microsoft.com/en-US/sessions"
+    session_code = raw.get("sessionCode")
+    session_id = raw.get("sessionId") or session_code or raw.get("localizedId") or raw.get("title")
+    session_url = (
+        f"https://ignite.microsoft.com/en-US/sessions/{session_code}"
+        if session_code
+        else "https://ignite.microsoft.com/en-US/sessions"
+    )
 
     record = {
         "id": session_id,
         "title": title,
-        "url": url,
+        "url": session_url,
         "date": start_dt.strftime("%Y-%m-%d") if start_dt else "",
         "time_text": f"{format_12_hour(start_dt)} - {format_12_hour(end_dt)}" if start_dt and end_dt else "",
         "start": start_dt.isoformat() if start_dt else None,
@@ -97,7 +102,7 @@ def normalize_session(raw: dict[str, Any]) -> dict[str, Any] | None:
         "metadata": metadata,
         "abstract": description,
         "speakerNames": speaker_names,
-        "sessionCode": raw.get("sessionCode"),
+        "sessionCode": session_code,
         "sessionType": session_type,
         "source_file": "live-api",
     }
