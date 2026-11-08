@@ -294,7 +294,7 @@
         border-bottom: 1px solid var(--border);
       }
       .calendar-body {
-        min-height: calc(var(--row-count) * 54px);
+        min-height: calc(var(--row-count) * var(--row-height));
       }
       .corner,
       .day-header,
@@ -330,7 +330,7 @@
         left: 0;
         z-index: 2;
         display: grid;
-        grid-template-rows: repeat(var(--row-count), 54px);
+        grid-template-rows: repeat(var(--row-count), var(--row-height));
         background: var(--panel);
       }
       .time-label {
@@ -382,14 +382,14 @@
       }
       .day-column {
         position: relative;
-        min-height: calc(var(--row-count) * 54px);
+        min-height: calc(var(--row-count) * var(--row-height));
         background:
           repeating-linear-gradient(
             to bottom,
             rgba(255,255,255,0.04) 0,
             rgba(255,255,255,0.04) 1px,
             transparent 1px,
-            transparent 54px
+            transparent var(--row-height)
           );
         border-right: 1px solid var(--border);
       }
@@ -1267,7 +1267,7 @@
         const dayStart = Math.max(0, Math.floor(Math.min(...validMinutes) / 30) * 30 - 30);
         const dayEnd = Math.min(1440, Math.ceil(Math.max(...validMinutes) / 30) * 30 + 30);
         const slotSize = 30;
-        const rowHeight = 54;
+        const rowHeight = 90;
         const rowCount = Math.max(8, Math.ceil((dayEnd - dayStart) / slotSize));
         const bodyHeight = rowCount * rowHeight;
 
@@ -1379,7 +1379,7 @@
             const startMinutes = getMinutesFromDayStart(session.start);
             const endMinutes = getMinutesFromDayStart(session.end || session.start);
             const top = ((startMinutes - dayStart) / slotSize) * rowHeight;
-            const height = Math.max(44, ((endMinutes - startMinutes) / slotSize) * rowHeight - 2);
+            const height = Math.max(0, ((endMinutes - startMinutes) / slotSize) * rowHeight - 2);
             const lane = plan.laneMap.get(session) || 0;
             const left = 8 + lane * laneWidth;
             const width = plan.laneCount === 1 ? plan.width - 16 : laneWidth - 10;
@@ -1420,7 +1420,7 @@
         }).join('');
 
         return `
-          <div class="calendar-shell" role="region" aria-label="Session calendar" tabindex="0" style="--row-count:${rowCount};">
+          <div class="calendar-shell" role="region" aria-label="Session calendar" tabindex="0" style="--row-count:${rowCount};--row-height:${rowHeight}px;">
             <div class="calendar-header" style="width:${totalWidth}px;grid-template-columns:${gridColumns};">
               <div class="corner"><span class="corner-label" title="America/Los_Angeles">Pacific Time</span><span class="corner-label">${daySessions.length} session${daySessions.length === 1 ? '' : 's'}</span></div>
               ${headerColumns}
