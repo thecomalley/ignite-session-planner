@@ -1255,12 +1255,18 @@
         const daySessions = scheduled
           .filter((session) => state.selectedDate ? getEventDateKey(session.start) === state.selectedDate : true)
           .sort((a, b) => new Date(a.start) - new Date(b.start));
+        const selectedDaySessions = state.sessions.filter((session) =>
+          session.start && session.end &&
+          state.selectedSessions.has(getSessionKey(session)) &&
+          (state.selectedDate ? getEventDateKey(session.start) === state.selectedDate : true)
+        );
 
-        if (!daySessions.length) {
+        if (!daySessions.length && !selectedDaySessions.length) {
           return '<div class="empty">No sessions scheduled for the selected day.</div>';
         }
 
-        const validMinutes = daySessions.flatMap((session) => {
+        const timelineSessions = [...new Set([...daySessions, ...selectedDaySessions])];
+        const validMinutes = timelineSessions.flatMap((session) => {
           const effectiveEnd = session.end || session.start;
           return [getMinutesFromDayStart(session.start), getMinutesFromDayStart(effectiveEnd)];
         });
@@ -1273,19 +1279,20 @@
         const bodyHeight = rowCount * rowHeight;
 
         const timeBySession = new Map();
-        const times = daySessions.map((session) => {
+        for (const session of timelineSessions) {
           const time = {
             start: new Date(session.start).getTime(),
             end: new Date(session.end || session.start).getTime()
           };
           timeBySession.set(session, time);
-          return time;
-        });
+        }
         const conflicts = new Set();
         for (let i = 0; i < daySessions.length; i += 1) {
           for (let j = i + 1; j < daySessions.length; j += 1) {
-            if (times[j].start >= times[i].end) break;
-            if (times[i].start < times[j].end) {
+            const first = timeBySession.get(daySessions[i]);
+            const second = timeBySession.get(daySessions[j]);
+            if (second.start >= first.end) break;
+            if (first.start < second.end) {
               conflicts.add(daySessions[i]);
               conflicts.add(daySessions[j]);
             }
@@ -1343,9 +1350,11 @@
             return start < minutes + slotSize && end > minutes;
           });
           const sessionCount = sessionsInSlot.length;
-          const selectedSessionsInSlot = sessionsInSlot.filter((session) =>
-            state.selectedSessions.has(getSessionKey(session))
-          );
+          const selectedSessionsInSlot = selectedDaySessions.filter((session) => {
+            const start = getMinutesFromDayStart(session.start);
+            const end = getMinutesFromDayStart(session.end || session.start);
+            return start < minutes + slotSize && end > minutes;
+          });
           const selectedConflicts = new Set();
           for (let i = 0; i < selectedSessionsInSlot.length; i += 1) {
             for (let j = i + 1; j < selectedSessionsInSlot.length; j += 1) {
