@@ -268,8 +268,8 @@
         min-width: 0;
         border: 1px solid var(--border);
         border-radius: 18px;
-        overflow-x: auto;
-        overflow-y: hidden;
+        max-height: calc(100dvh - 80px);
+        overflow: auto;
         background: rgba(19, 29, 51, 0.5);
       }
       .calendar-shell.single-day {
@@ -290,7 +290,10 @@
         grid-template-columns: 86px 1fr;
       }
       .calendar-header {
-        background: rgba(255,255,255,0.03);
+        position: sticky;
+        top: 0;
+        z-index: 7;
+        background: var(--panel);
         border-bottom: 1px solid var(--border);
       }
       .calendar-body {
@@ -395,6 +398,7 @@
       }
       .event-block {
         position: absolute;
+        z-index: 1;
         border-radius: 12px;
         padding: 8px 10px;
         background: rgba(19, 29, 51, 0.18);
@@ -433,7 +437,6 @@
         min-width: 0;
         max-width: none;
         padding: 4px 7px;
-        transition: opacity 0.12s ease;
       }
       .event-block h4 {
         margin: 2px 0 3px;
@@ -454,18 +457,6 @@
       .event-block.has-conflict {
         box-shadow: inset 0 0 0 1px rgba(255, 179, 71, 0.28);
       }
-      .event-block.is-clash {
-        box-shadow: inset 0 0 0 2px #ffb347, 0 4px 16px rgba(0, 0, 0, 0.35);
-        z-index: 4;
-      }
-      .event-block.is-active {
-        outline: 2px solid #ffffff;
-        outline-offset: 1px;
-        z-index: 5;
-      }
-      .event-block.is-dimmed {
-        opacity: 0.22;
-      }
       .event-block.is-selected {
         border-color: var(--accent-2);
         box-shadow: inset 0 0 0 1px rgba(142, 240, 192, 0.38);
@@ -474,7 +465,7 @@
         position: absolute;
         top: 4px;
         right: 5px;
-        z-index: 6;
+        z-index: 1;
         display: grid;
         place-items: center;
         width: 22px;
@@ -518,6 +509,7 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 6px;
+        padding-right: 26px;
         font-size: 0.68rem;
         color: var(--muted);
         line-height: 1.2;
@@ -638,6 +630,10 @@
       /* Keep planning controls compact and let the calendar take the space. */
       .page { padding: 16px 16px 24px; }
       .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: var(--bg);
         gap: 8px;
         margin-bottom: 10px;
         flex-wrap: nowrap;
@@ -1267,7 +1263,7 @@
         const dayStart = Math.max(0, Math.floor(Math.min(...validMinutes) / 30) * 30 - 30);
         const dayEnd = Math.min(1440, Math.ceil(Math.max(...validMinutes) / 30) * 30 + 30);
         const slotSize = 30;
-        const rowHeight = 90;
+        const rowHeight = 72;
         const rowCount = Math.max(8, Math.ceil((dayEnd - dayStart) / slotSize));
         const bodyHeight = rowCount * rowHeight;
 
@@ -1401,7 +1397,7 @@
             const isSelected = state.selectedSessions.has(sessionKey);
             const tooltip = session.title;
             return `
-              <article class="event-block${hasConflict ? ' has-conflict' : ''}${height < 64 ? ' compact' : ''}${isSelected ? ' is-selected' : ''}" data-start="${new Date(session.start).getTime()}" data-end="${new Date(session.end || session.start).getTime()}" style="top:${top}px;height:${height}px;left:${left}px;width:${width}px;--title-lines:${Math.max(1, Math.floor((height - 42) / 15))};--session-type-color:${escapeAttr(getSessionTypeColor(sessionType))};" title="${escapeAttr(tooltip)}">
+              <article class="event-block${hasConflict ? ' has-conflict' : ''}${height < 64 ? ' compact' : ''}${isSelected ? ' is-selected' : ''}" style="top:${top}px;height:${height}px;left:${left}px;width:${width}px;--title-lines:${Math.max(1, Math.floor((height - 42) / 15))};--session-type-color:${escapeAttr(getSessionTypeColor(sessionType))};" title="${escapeAttr(tooltip)}">
                 <button class="event-select-button" type="button" data-session-key="${escapeAttr(sessionKey)}" aria-label="${isSelected ? 'Remove from' : 'Add to'} my sessions: ${escapeAttr(session.title)}" aria-pressed="${isSelected}" title="${isSelected ? 'Remove from' : 'Add to'} my sessions">${isSelected ? '✓' : '+'}</button>
                 <div class="event-top">
                   <span class="event-time">${formatClock(session.start)}–${formatClock(session.end)}</span>
@@ -1434,7 +1430,9 @@
       }
 
       function renderPlanner() {
-        const previousScroll = document.querySelector(".calendar-shell")?.scrollLeft || 0;
+        const previousCalendar = document.querySelector(".calendar-shell");
+        const previousScrollLeft = previousCalendar?.scrollLeft || 0;
+        const previousScrollTop = previousCalendar?.scrollTop || 0;
         updateSelectionFilter();
         updateSessionCodeWarning();
         updateFilterControls();
@@ -1460,7 +1458,10 @@
           </div>
         `;
         const calendar = document.querySelector(".calendar-shell");
-        if (calendar) calendar.scrollLeft = previousScroll;
+        if (calendar) {
+          calendar.scrollLeft = previousScrollLeft;
+          calendar.scrollTop = previousScrollTop;
+        }
       }
 
       function changeSelectedDate(delta) {
@@ -1472,25 +1473,6 @@
         const nextIndex = Math.max(0, Math.min(dates.length - 1, index + delta));
         state.selectedDate = dates[nextIndex];
         renderPlanner();
-      }
-
-      function clearConflictHighlight() {
-        document.querySelectorAll(".event-block.is-clash, .event-block.is-active, .event-block.is-dimmed").forEach((block) => {
-          block.classList.remove("is-clash", "is-active", "is-dimmed");
-        });
-      }
-
-      function highlightConflicts(block) {
-        const start = Number(block.dataset.start);
-        const end = Number(block.dataset.end);
-        document.querySelectorAll(".event-block").forEach((candidate) => {
-          const candidateStart = Number(candidate.dataset.start);
-          const candidateEnd = Number(candidate.dataset.end);
-          const overlaps = candidateStart < end && start < candidateEnd;
-          candidate.classList.toggle("is-active", candidate === block);
-          candidate.classList.toggle("is-clash", candidate !== block && overlaps);
-          candidate.classList.toggle("is-dimmed", !overlaps);
-        });
       }
 
       fetch('sessions.json')
@@ -1583,17 +1565,6 @@
         saveSelectedSessions();
         renderPlanner();
       });
-      agendaElement.addEventListener("mouseover", (event) => {
-        const block = event.target.closest(".event-block");
-        if (block) highlightConflicts(block);
-      });
-      agendaElement.addEventListener("mouseout", (event) => {
-        const block = event.target.closest(".event-block");
-        if (!block) return;
-        if (event.relatedTarget && block.contains(event.relatedTarget)) return;
-        clearConflictHighlight();
-      });
-
       document.getElementById("date-selector").addEventListener("change", (event) => {
         state.selectedDate = event.target.value;
         renderPlanner();
