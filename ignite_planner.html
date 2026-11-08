@@ -780,9 +780,9 @@
     </div>
 
     <script>
-      const APPLICATION_INSIGHTS_CONNECTION_STRING = "YOUR_CONNECTION_STRING";
+      const APPLICATION_INSIGHTS_CONNECTION_STRING = "__APPLICATION_INSIGHTS_CONNECTION_STRING__";
 
-      if (APPLICATION_INSIGHTS_CONNECTION_STRING !== "YOUR_CONNECTION_STRING") {
+      if (APPLICATION_INSIGHTS_CONNECTION_STRING !== "__APPLICATION_INSIGHTS_CONNECTION_STRING__") {
         const appInsightsScript = document.createElement("script");
         appInsightsScript.src = "https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js";
         appInsightsScript.crossOrigin = "anonymous";

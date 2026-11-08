@@ -19,6 +19,27 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Configure Application Insights
+        env:
+          APPLICATION_INSIGHTS_CONNECTION_STRING: ${{ vars.APPLICATION_INSIGHTS_CONNECTION_STRING }}
+        run: |
+          if [ -z "$APPLICATION_INSIGHTS_CONNECTION_STRING" ]; then
+            echo "Application Insights is not configured; deploying with telemetry disabled."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("ignite_planner.html")
+          html = path.read_text()
+          placeholder = '"__APPLICATION_INSIGHTS_CONNECTION_STRING__"'
+          if placeholder not in html:
+              raise SystemExit("Application Insights connection string placeholder is missing.")
+          connection_string = json.dumps(os.environ["APPLICATION_INSIGHTS_CONNECTION_STRING"])
+          path.write_text(html.replace(placeholder, connection_string))
+          PY
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
