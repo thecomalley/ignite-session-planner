@@ -249,10 +249,12 @@
       }
       .agenda {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 12px;
       }
       .planner-layout {
         display: block;
+        min-width: 0;
       }
       .planner-main {
         min-width: 0;
@@ -261,12 +263,13 @@
         display: none;
       }
       .calendar-shell {
+        width: 100%;
+        min-width: 0;
         border: 1px solid var(--border);
         border-radius: 18px;
         overflow-x: auto;
         overflow-y: hidden;
         background: rgba(19, 29, 51, 0.5);
-        min-width: 1000px;
       }
       .calendar-shell.single-day {
         min-width: 760px;
@@ -302,6 +305,7 @@
         min-height: 54px;
         background: rgba(255,255,255,0.02);
         display: flex;
+        flex-direction: column;
         align-items: flex-end;
         justify-content: flex-end;
         padding: 0 8px 6px 0;
@@ -610,59 +614,146 @@
           grid-template-columns: 1fr;
         }
       }
+      /* Keep planning controls compact and let the calendar take the space. */
+      .page { padding: 16px 16px 24px; }
+      .topbar {
+        gap: 8px;
+        margin-bottom: 10px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .topbar::-webkit-scrollbar { display: none; }
+      .brand { flex: 0 0 auto; }
+      h1 { font-size: 1.1rem; white-space: nowrap; }
+      .date-nav { flex: 0 0 auto; }
+      .date-nav {
+        justify-content: flex-start;
+        gap: 4px;
+        margin: 0;
+        padding: 3px;
+        background: rgba(255,255,255,0.03);
+      }
+      .date-nav button, .date-nav select {
+        border: 0;
+        border-radius: 8px;
+        padding: 7px 10px;
+      }
+      .date-nav button:disabled { opacity: 0.35; cursor: default; }
+      .date-nav select { min-width: 0; color-scheme: dark; }
+      .controls { gap: 8px; margin: 0; flex: 1 0 auto; flex-wrap: nowrap; }
+      .controls input[type="search"] {
+        flex: 1 0 160px;
+        width: 160px;
+        min-width: 160px;
+        border-radius: 10px;
+        padding: 9px 12px;
+      }
+      .selection-filter, .filter-panel > summary, .clear-filters {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        padding: 9px 12px;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .filter-panel { position: relative; z-index: 11; }
+      .filter-panel > summary { list-style: none; }
+      .filter-panel > summary::-webkit-details-marker { display: none; }
+      .filter-panel > summary::after { content: " ⌄"; color: var(--muted); }
+      .filter-panel[open] > summary, .filter-panel.has-filters > summary {
+        border-color: rgba(124, 199, 255, 0.5);
+        background: rgba(124, 199, 255, 0.1);
+      }
+      .filter-panel-content {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: min(360px, calc(100vw - 32px));
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: #101a2d;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+      }
+      .filter-field { display: grid; gap: 5px; color: var(--muted); font-size: 0.8rem; }
+      .controls .filter-field select, .filter-field .multi-select-filter,
+      .filter-field .multi-select-filter > summary {
+        width: 100%;
+        min-width: 0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 0.9rem;
+      }
+      .filter-field .multi-select-filter { padding: 0; }
+      .clear-filters { color: var(--muted); }
+      .clear-filters[hidden], .short-label { display: none; }
+      .service-note, .session-warning { margin-bottom: 12px; }
       @media (max-width: 680px) {
-        input,
-        .controls select,
-        .multi-select-filter,
-        .multi-select-filter > summary { min-width: 100%; }
-        .date-nav {
-          flex-wrap: wrap;
-          justify-content: center;
-        }
+        .page { padding: 12px 10px 24px; }
+        .topbar, .controls { gap: 4px; }
+        .title-detail, .long-label { display: none; }
+        .short-label { display: inline; }
+        .date-nav button, .date-nav select { padding-left: 5px; padding-right: 5px; }
+        .selection-filter, .filter-panel > summary, .clear-filters { padding-left: 8px; padding-right: 8px; }
+        .controls input[type="search"] { flex-basis: 100px; width: 100px; min-width: 100px; }
       }
     </style>
   </head>
   <body>
     <div class="page">
       <div class="topbar">
-        <h1>Ignite session planner</h1>
+        <div class="brand">
+          <h1>Ignite<span class="title-detail"> session planner</span></h1>
+        </div>
+        <div class="date-nav" aria-label="Day selector">
+          <button id="prev-day" type="button" aria-label="Previous day">←</button>
+          <select id="date-selector" aria-label="Select a day"></select>
+          <button id="next-day" type="button" aria-label="Next day">→</button>
+        </div>
         <div class="controls">
-          <input id="search" type="search" placeholder="Filter by title, topic, or room" />
-          <details id="session-type-filter" class="multi-select-filter">
-            <summary id="session-type-filter-label">All session types</summary>
-            <div id="session-type-filter-options" class="multi-select-options" role="group" aria-label="Filter by session type"></div>
-          </details>
-          <select id="session-level-filter" aria-label="Filter by level">
-            <option value="">All levels</option>
-          </select>
-          <select id="recording-status-filter" aria-label="Filter by recording status">
-            <option value="">All recording statuses</option>
-          </select>
-          <select id="audience-type-filter" aria-label="Filter by audience type">
-            <option value="">All audience types</option>
-          </select>
-          <label for="sort-by">Sort by</label>
-          <select id="sort-by" aria-label="Sort sessions by">
-            <option value="location">Location</option>
-            <option value="sessionType">Session type</option>
-          </select>
-          <button id="selection-filter" class="selection-filter" type="button" aria-pressed="false">My sessions (0)</button>
+        <input id="search" type="search" aria-label="Search sessions" placeholder="Search title, topic, speaker, or room" />
+        <button id="selection-filter" class="selection-filter" type="button" aria-pressed="false" aria-label="My sessions (0)"><span class="long-label">My sessions</span><span class="short-label" aria-hidden="true">My</span> <span id="selection-count">(0)</span></button>
+        <details id="filter-panel" class="filter-panel">
+          <summary id="filter-panel-label">Filters</summary>
+          <div class="filter-panel-content">
+            <div class="filter-field">
+              <span>Session type</span>
+              <details id="session-type-filter" class="multi-select-filter">
+                <summary id="session-type-filter-label">All session types</summary>
+                <div id="session-type-filter-options" class="multi-select-options" role="group" aria-label="Filter by session type"></div>
+              </details>
+            </div>
+            <label class="filter-field" for="session-level-filter">Level
+              <select id="session-level-filter"><option value="">All levels</option></select>
+            </label>
+            <label class="filter-field" for="recording-status-filter">Recording
+              <select id="recording-status-filter"><option value="">All recording statuses</option></select>
+            </label>
+            <label class="filter-field" for="audience-type-filter">Audience
+              <select id="audience-type-filter"><option value="">All audience types</option></select>
+            </label>
+            <label class="filter-field" for="sort-by">Group by
+              <select id="sort-by">
+                <option value="location">Location</option>
+                <option value="sessionType">Session type</option>
+              </select>
+            </label>
+          </div>
+        </details>
+        <button id="clear-filters" class="clear-filters" type="button" aria-label="Clear filters" hidden><span class="long-label">Clear filters</span><span class="short-label" aria-hidden="true">✕</span></button>
         </div>
       </div>
 
       <div id="session-code-warning" class="session-warning" role="status" hidden></div>
-
-      <div class="date-nav" aria-label="Day selector">
-        <button id="prev-day" type="button" aria-label="Previous day">← Prev</button>
-        <select id="date-selector" aria-label="Select a day"></select>
-        <button id="next-day" type="button" aria-label="Next day">Next →</button>
-      </div>
-
       <div class="service-note" id="service-note">
         Open this page from a local server such as http://localhost:8000/ignite_planner.html so the planner can load sessions.json.
       </div>
-
-      <div class="summary" id="session-summary"></div>
 
       <div id="agenda" class="agenda" aria-live="polite"></div>
     </div>
@@ -741,7 +832,8 @@
 
       function updateSelectionFilter() {
         const button = document.getElementById("selection-filter");
-        button.textContent = `My sessions (${state.selectedSessions.size})`;
+        document.getElementById("selection-count").textContent = `(${state.selectedSessions.size})`;
+        button.setAttribute("aria-label", `My sessions (${state.selectedSessions.size})`);
         button.classList.toggle("active", state.showSelectedOnly);
         button.setAttribute("aria-pressed", String(state.showSelectedOnly));
       }
@@ -966,6 +1058,8 @@
         if (!dates.length) {
           selector.innerHTML = '<option value="">No dates</option>';
           selector.disabled = true;
+          document.getElementById("prev-day").disabled = true;
+          document.getElementById("next-day").disabled = true;
           return;
         }
 
@@ -973,29 +1067,20 @@
         selector.disabled = false;
         selector.innerHTML = dates.map((date) => `<option value="${date}">${formatDayKey(date)}</option>`).join('');
         selector.value = state.selectedDate;
+        const index = dates.indexOf(state.selectedDate);
+        document.getElementById("prev-day").disabled = index <= 0;
+        document.getElementById("next-day").disabled = index >= dates.length - 1;
       }
 
-      function updateSessionSummary(daySessions) {
-        const summary = document.getElementById("session-summary");
-        const pills = document.createDocumentFragment();
-        const totalPill = document.createElement("div");
-        totalPill.className = "pill";
-        totalPill.textContent = `${daySessions.length} session${daySessions.length === 1 ? "" : "s"}`;
-        pills.append(totalPill);
-
-        const countsByType = new Map();
-        for (const session of daySessions) {
-          const type = (session.sessionType || "").trim();
-          if (type) countsByType.set(type, (countsByType.get(type) || 0) + 1);
-        }
-
-        for (const [type, count] of [...countsByType].sort(([a], [b]) => a.localeCompare(b))) {
-          const typePill = document.createElement("div");
-          typePill.className = "pill";
-          typePill.textContent = `${type}: ${count} session${count === 1 ? "" : "s"}`;
-          pills.append(typePill);
-        }
-        summary.replaceChildren(pills);
+      function updateFilterControls() {
+        const typeCount = document.querySelectorAll("#session-type-filter-options input:checked").length;
+        const optionCount = ["session-level-filter", "recording-status-filter", "audience-type-filter"]
+          .filter((id) => document.getElementById(id).value).length;
+        const count = typeCount + optionCount;
+        document.getElementById("filter-panel-label").textContent = count ? `Filters (${count})` : "Filters";
+        document.getElementById("filter-panel").classList.toggle("has-filters", count > 0);
+        document.getElementById("clear-filters").hidden =
+          !count && !document.getElementById("search").value && !state.showSelectedOnly;
       }
 
       function matchesSearch(session, searchTerm) {
@@ -1246,9 +1331,9 @@
         }).join('');
 
         return `
-          <div class="calendar-shell" style="width:${totalWidth}px;min-width:0;--row-count:${rowCount};">
+          <div class="calendar-shell" role="region" aria-label="Session calendar" tabindex="0" style="--row-count:${rowCount};">
             <div class="calendar-header" style="width:${totalWidth}px;grid-template-columns:${gridColumns};">
-              <div class="corner"><span class="corner-label">PT</span></div>
+              <div class="corner"><span class="corner-label" title="America/Los_Angeles">Pacific Time</span><span class="corner-label">${daySessions.length} session${daySessions.length === 1 ? '' : 's'}</span></div>
               ${headerColumns}
             </div>
             <div class="calendar-body" style="width:${totalWidth}px;height:${bodyHeight}px;grid-template-columns:${gridColumns};">
@@ -1260,18 +1345,16 @@
       }
 
       function renderPlanner() {
+        const previousScroll = document.querySelector(".calendar-shell")?.scrollLeft || 0;
         updateSelectionFilter();
         updateSessionCodeWarning();
+        updateFilterControls();
         const filtered = getFilteredSessions();
         state.filtered = filtered;
 
-        ensureSelectedDate(filtered);
         updateDateSelector();
 
-        const daySessions = state.selectedDate
-          ? filtered.filter((session) => getEventDateKey(session.start) === state.selectedDate)
-          : [];
-        updateSessionSummary(daySessions);
+        positionFilterPanel();
 
         if (!filtered.length) {
           const emptyMessage = state.showSelectedOnly
@@ -1287,6 +1370,8 @@
             <div class="planner-main">${calendarHtml}</div>
           </div>
         `;
+        const calendar = document.querySelector(".calendar-shell");
+        if (calendar) calendar.scrollLeft = previousScroll;
       }
 
       function changeSelectedDate(delta) {
@@ -1338,6 +1423,46 @@
         });
 
       document.getElementById("search").addEventListener("input", renderPlanner);
+      document.getElementById("clear-filters").addEventListener("click", () => {
+        document.getElementById("search").value = "";
+        document.querySelectorAll("#session-type-filter-options input:checked").forEach((input) => { input.checked = false; });
+        ["session-level-filter", "recording-status-filter", "audience-type-filter"]
+          .forEach((id) => { document.getElementById(id).value = ""; });
+        state.showSelectedOnly = false;
+        updateSessionTypeFilterLabel();
+        renderPlanner();
+      });
+      const filterPanel = document.getElementById("filter-panel");
+      function positionFilterPanel() {
+        if (!filterPanel.open) return;
+        const trigger = filterPanel.querySelector("summary").getBoundingClientRect();
+        const content = filterPanel.querySelector(".filter-panel-content");
+        const width = content.offsetWidth;
+        content.style.left = `${Math.max(10, Math.min(trigger.right - width, window.innerWidth - width - 10))}px`;
+        content.style.top = `${trigger.bottom + 6}px`;
+      }
+      filterPanel.addEventListener("toggle", positionFilterPanel);
+      document.querySelector(".topbar").addEventListener("scroll", positionFilterPanel);
+      window.addEventListener("scroll", positionFilterPanel);
+      window.addEventListener("resize", positionFilterPanel);
+      document.addEventListener("click", (event) => {
+        if (!filterPanel.contains(event.target)) {
+          filterPanel.open = false;
+          document.getElementById("session-type-filter").open = false;
+        }
+      });
+      filterPanel.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        const types = document.getElementById("session-type-filter");
+        if (types.open) {
+          types.open = false;
+          types.querySelector("summary").focus();
+        } else {
+          filterPanel.open = false;
+          filterPanel.querySelector("summary").focus();
+        }
+        event.preventDefault();
+      });
       document.getElementById("session-type-filter").addEventListener("change", () => {
         updateSessionTypeFilterLabel();
         renderPlanner();
