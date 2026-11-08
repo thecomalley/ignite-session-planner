@@ -349,11 +349,25 @@
       .time-label.has-selected-session {
         background: rgba(142, 240, 192, 0.1);
       }
+      .time-label.has-selection-conflict {
+        background: rgba(255, 179, 71, 0.12);
+      }
       .time-label.has-selected-session .time-label-time,
       .time-selected-indicator {
         color: var(--accent-2);
       }
-      .time-selected-indicator {
+      .time-label.has-selection-conflict .time-label-time,
+      .time-selection-conflict {
+        color: #ffb347;
+      }
+      .time-selected-indicator,
+      .time-selection-conflict {
+        font-size: 0.6rem;
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      .time-selection-conflict {
         font-size: 0.6rem;
         font-weight: 700;
         line-height: 1.1;
@@ -1230,10 +1244,15 @@
         const rowCount = Math.max(8, Math.ceil((dayEnd - dayStart) / slotSize));
         const bodyHeight = rowCount * rowHeight;
 
-        const times = daySessions.map((session) => ({
-          start: new Date(session.start).getTime(),
-          end: new Date(session.end || session.start).getTime()
-        }));
+        const timeBySession = new Map();
+        const times = daySessions.map((session) => {
+          const time = {
+            start: new Date(session.start).getTime(),
+            end: new Date(session.end || session.start).getTime()
+          };
+          timeBySession.set(session, time);
+          return time;
+        });
         const conflicts = new Set();
         for (let i = 0; i < daySessions.length; i += 1) {
           for (let j = i + 1; j < daySessions.length; j += 1) {
@@ -1296,12 +1315,29 @@
             return start < minutes + slotSize && end > minutes;
           });
           const sessionCount = sessionsInSlot.length;
-          const hasSelectedSession = sessionsInSlot.some((session) => state.selectedSessions.has(getSessionKey(session)));
+          const selectedSessionsInSlot = sessionsInSlot.filter((session) =>
+            state.selectedSessions.has(getSessionKey(session))
+          );
+          const selectedConflicts = new Set();
+          for (let i = 0; i < selectedSessionsInSlot.length; i += 1) {
+            for (let j = i + 1; j < selectedSessionsInSlot.length; j += 1) {
+              const first = timeBySession.get(selectedSessionsInSlot[i]);
+              const second = timeBySession.get(selectedSessionsInSlot[j]);
+              if (first.start < second.end && second.start < first.end) {
+                selectedConflicts.add(selectedSessionsInSlot[i]);
+                selectedConflicts.add(selectedSessionsInSlot[j]);
+              }
+            }
+          }
+          const hasSelectedSession = selectedSessionsInSlot.length > 0;
+          const hasSelectionConflict = selectedConflicts.size > 1;
           const countLabel = `${sessionCount} session${sessionCount === 1 ? '' : 's'}`;
-          const selectedLabel = hasSelectedSession
-            ? '<span class="time-selected-indicator" title="A session you selected is scheduled during this time">✓ selected</span>'
-            : '';
-          return `<div class="time-label${hasSelectedSession ? ' has-selected-session' : ''}"><span class="time-label-time">${formatTimeLabel(minutes)}</span><span class="time-session-count">${countLabel}</span>${selectedLabel}</div>`;
+          const selectedLabel = hasSelectionConflict
+            ? `<span class="time-selection-conflict" title="${selectedConflicts.size} selected sessions overlap during this time">⚠ ${selectedConflicts.size} selected</span>`
+            : hasSelectedSession
+              ? '<span class="time-selected-indicator" title="A session you selected is scheduled during this time">✓ selected</span>'
+              : '';
+          return `<div class="time-label${hasSelectedSession ? ' has-selected-session' : ''}${hasSelectionConflict ? ' has-selection-conflict' : ''}"><span class="time-label-time">${formatTimeLabel(minutes)}</span><span class="time-session-count">${countLabel}</span>${selectedLabel}</div>`;
         }).join('');
 
         const headerColumns = buildingPlans.map((plan) => `
