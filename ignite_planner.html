@@ -23,8 +23,8 @@
         color: var(--text);
       }
       .page {
-        max-width: 1200px;
-        margin: 0 auto;
+        width: 100%;
+        margin: 0;
         padding: 32px 16px 60px;
       }
       .topbar {
@@ -132,12 +132,6 @@
         min-width: 210px;
         text-align: center;
       }
-      .selected-date-label {
-        font-weight: 700;
-        color: var(--text);
-        text-align: center;
-        min-width: 180px;
-      }
       .service-note {
         margin-bottom: 18px;
         padding: 12px 14px;
@@ -145,6 +139,17 @@
         background: rgba(255, 178, 72, 0.12);
         border: 1px solid rgba(255, 178, 72, 0.35);
         color: var(--muted);
+        display: none;
+      }
+      .session-warning {
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(255, 178, 72, 0.12);
+        border: 1px solid rgba(255, 178, 72, 0.35);
+        color: var(--text);
+      }
+      .session-warning[hidden] {
         display: none;
       }
       .tabs {
@@ -322,7 +327,7 @@
         font-size: 0.78rem;
         line-height: 1.2;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: var(--title-lines, 2);
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
@@ -348,6 +353,53 @@
       .event-block.is-dimmed {
         opacity: 0.22;
       }
+      .event-block.is-selected {
+        border-color: var(--accent-2);
+        box-shadow: inset 0 0 0 1px rgba(142, 240, 192, 0.38);
+      }
+      .event-select-button {
+        position: absolute;
+        top: 4px;
+        right: 5px;
+        z-index: 6;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: rgba(7, 11, 19, 0.82);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.8rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .event-select-button[aria-pressed="true"] {
+        background: rgba(142, 240, 192, 0.2);
+        border-color: var(--accent-2);
+        color: var(--accent-2);
+      }
+      .event-select-button:focus-visible,
+      .selection-filter:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .selection-filter {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        padding: 10px 14px;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .selection-filter.active {
+        border-color: rgba(142, 240, 192, 0.5);
+        background: rgba(142, 240, 192, 0.12);
+      }
       .event-top {
         display: flex;
         align-items: baseline;
@@ -371,19 +423,57 @@
         justify-content: space-between;
         gap: 6px;
       }
+      .event-session-code {
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .event-recording {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        color: var(--accent-2);
+      }
+      .event-recording.not-recorded {
+        color: var(--muted);
+      }
+      .event-recording svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.6;
+      }
       .event-block.compact {
-        padding: 4px 7px;
+        padding: 3px 6px;
+      }
+      .event-block.compact .event-top {
+        font-size: 0.6rem;
       }
       .event-block.compact h4 {
         margin: 0;
-        font-size: 0.76rem;
+        font-size: 0.69rem;
+        line-height: 1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         -webkit-line-clamp: 1;
       }
       .event-block.compact .event-meta {
+        display: flex;
+        padding-right: 22px;
+        font-size: 0.57rem;
+        line-height: 1;
+      }
+      .event-block.compact .event-meta .event-type {
         display: none;
+      }
+      .event-block.compact .event-recording svg {
+        width: 11px;
+        height: 11px;
       }
       .event-block.compact.has-conflict::after {
         content: "";
@@ -405,11 +495,6 @@
       }
       .corner-label {
         font-size: 0.7rem;
-        color: var(--muted);
-      }
-      .calendar-hint {
-        margin: -4px 0 14px;
-        font-size: 0.8rem;
         color: var(--muted);
       }
       .empty {
@@ -439,10 +524,6 @@
           flex-wrap: wrap;
           justify-content: center;
         }
-        .selected-date-label {
-          min-width: 0;
-          width: 100%;
-        }
       }
     </style>
   </head>
@@ -455,13 +536,20 @@
           <select id="session-type-filter" aria-label="Filter by session type">
             <option value="">All session types</option>
           </select>
+          <label for="sort-by">Sort by</label>
+          <select id="sort-by" aria-label="Sort sessions by">
+            <option value="location">Location</option>
+            <option value="sessionType">Session type</option>
+          </select>
+          <button id="selection-filter" class="selection-filter" type="button" aria-pressed="false">My sessions (0)</button>
         </div>
       </div>
+
+      <div id="session-code-warning" class="session-warning" role="status" hidden></div>
 
       <div class="date-nav" aria-label="Day selector">
         <button id="prev-day" type="button" aria-label="Previous day">← Prev</button>
         <select id="date-selector" aria-label="Select a day"></select>
-        <div id="selected-date-label" class="selected-date-label">Loading…</div>
         <button id="next-day" type="button" aria-label="Next day">Next →</button>
       </div>
 
@@ -469,19 +557,85 @@
         Open this page from a local server such as http://localhost:8000/ignite_planner.html so the planner can load sessions.json.
       </div>
 
-      <div class="summary">
-        <div class="pill" id="session-count">0 sessions</div>
-        <div class="pill" id="date-range">Loading…</div>
-      </div>
-
-      <div class="calendar-hint">Same time = direct conflict · Taller block = longer session · Buildings are grouped into columns</div>
+      <div class="summary" id="session-summary"></div>
 
       <div id="agenda" class="agenda" aria-live="polite"></div>
     </div>
 
     <script>
-      const state = { sessions: [], filtered: [], selectedDate: null };
+      const SELECTED_SESSIONS_KEY = "ignite-planner-selected-sessions";
+      const state = {
+        sessions: [],
+        filtered: [],
+        selectedDate: null,
+        selectedSessions: loadSelectedSessions(),
+        showSelectedOnly: false,
+        sortBy: "location"
+      };
       const EVENT_TIMEZONE = "America/Los_Angeles";
+
+      function loadSelectedSessions() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(SELECTED_SESSIONS_KEY) || "[]");
+          return new Set(Array.isArray(saved) ? saved.map(String) : []);
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveSelectedSessions() {
+        try {
+          localStorage.setItem(SELECTED_SESSIONS_KEY, JSON.stringify([...state.selectedSessions]));
+        } catch (error) {
+          console.warn("Unable to save selected sessions in this browser.", error);
+        }
+      }
+
+      function getSessionKey(session) {
+        const identity = session.sessionCode || session.id || session.title;
+        return `${identity}|${session.start || ""}|${session.end || ""}`;
+      }
+
+      function updateSelectionFilter() {
+        const button = document.getElementById("selection-filter");
+        button.textContent = `My sessions (${state.selectedSessions.size})`;
+        button.classList.toggle("active", state.showSelectedOnly);
+        button.setAttribute("aria-pressed", String(state.showSelectedOnly));
+      }
+
+      function updateSessionCodeWarning() {
+        const warning = document.getElementById("session-code-warning");
+        const selectedByCode = new Map();
+        for (const session of state.sessions) {
+          const code = (session.sessionCode || "").trim();
+          if (!code || !state.selectedSessions.has(getSessionKey(session))) continue;
+          const normalizedCode = code.toUpperCase();
+          if (!selectedByCode.has(normalizedCode)) {
+            selectedByCode.set(normalizedCode, { code, occurrences: new Set(), count: 0 });
+          }
+          const selected = selectedByCode.get(normalizedCode);
+          selected.count += 1;
+          const date = session.start ? getEventDateKey(session.start) : "";
+          if (date) selected.occurrences.add(`${date}|${session.start}`);
+        }
+
+        const duplicates = [...selectedByCode.values()].filter(({ count }) => count > 1);
+        if (!duplicates.length) {
+          warning.hidden = true;
+          warning.textContent = "";
+          return;
+        }
+
+        const duplicateCodes = duplicates.map(({ code, occurrences }) => {
+          const schedule = [...occurrences].sort().map((occurrence) => {
+            const [date, start] = occurrence.split("|");
+            return `${formatDayKey(date)} ${formatClock(start)}`;
+          });
+          return `${code} (${schedule.join(", ")})`;
+        });
+        warning.textContent = `Repeated session codes in My sessions: ${duplicateCodes.join("; ")}. Codes can be reused on different days, so check each date and time to confirm you want to keep every occurrence.`;
+        warning.hidden = false;
+      }
 
       if (window.location.protocol === 'file:') {
         document.getElementById('service-note').style.display = 'block';
@@ -680,7 +834,6 @@
         if (!dates.length) {
           selector.innerHTML = '<option value="">No dates</option>';
           selector.disabled = true;
-          document.getElementById("selected-date-label").textContent = "No scheduled sessions";
           return;
         }
 
@@ -688,24 +841,29 @@
         selector.disabled = false;
         selector.innerHTML = dates.map((date) => `<option value="${date}">${formatDayKey(date)}</option>`).join('');
         selector.value = state.selectedDate;
-        document.getElementById("selected-date-label").textContent = formatDayLong(state.selectedDate);
       }
 
-      function updateDateRangeText() {
-        const validDates = state.filtered.map((session) => session.start).filter(Boolean);
-        if (!validDates.length) {
-          document.getElementById("date-range").textContent = "No sessions";
-          return;
+      function updateSessionSummary(daySessions) {
+        const summary = document.getElementById("session-summary");
+        const pills = document.createDocumentFragment();
+        const totalPill = document.createElement("div");
+        totalPill.className = "pill";
+        totalPill.textContent = `${daySessions.length} session${daySessions.length === 1 ? "" : "s"}`;
+        pills.append(totalPill);
+
+        const countsByType = new Map();
+        for (const session of daySessions) {
+          const type = (session.sessionType || "").trim();
+          if (type) countsByType.set(type, (countsByType.get(type) || 0) + 1);
         }
 
-        if (state.selectedDate) {
-          document.getElementById("date-range").textContent = `Showing times in Pacific Time (PT) • ${formatDayLong(state.selectedDate)}`;
-          return;
+        for (const [type, count] of [...countsByType].sort(([a], [b]) => a.localeCompare(b))) {
+          const typePill = document.createElement("div");
+          typePill.className = "pill";
+          typePill.textContent = `${type}: ${count} session${count === 1 ? "" : "s"}`;
+          pills.append(typePill);
         }
-
-        const minDate = new Date(Math.min(...validDates.map((v) => new Date(v).getTime())));
-        const maxDate = new Date(Math.max(...validDates.map((v) => new Date(v).getTime())));
-        document.getElementById("date-range").textContent = `Showing times in Pacific Time (PT) • ${formatDay(minDate.toISOString())} → ${formatDay(maxDate.toISOString())}`;
+        summary.replaceChildren(pills);
       }
 
       function matchesSearch(session, searchTerm) {
@@ -740,14 +898,16 @@
         const selectedType = document.getElementById("session-type-filter").value;
         return state.sessions.filter((session) =>
           session.start && session.end &&
+          (!state.showSelectedOnly || state.selectedSessions.has(getSessionKey(session))) &&
           (!selectedType || (session.sessionType || "").trim() === selectedType) &&
           matchesSearch(session, searchTerm)
         );
       }
 
       function getSessionUrl(session) {
-        return session.sessionCode
-          ? `https://ignite.microsoft.com/en-US/sessions/${encodeURIComponent(session.sessionCode)}`
+        const routeId = session.sessionInstanceId || session.sessionCode;
+        return routeId
+          ? `https://ignite.microsoft.com/en-US/sessions/${encodeURIComponent(routeId)}`
           : session.url || "#";
       }
 
@@ -789,17 +949,19 @@
           }
         }
 
-        const buildings = new Map();
+        const groups = new Map();
         for (const session of daySessions) {
-          const building = getBroadLocation(session.location);
-          if (!buildings.has(building)) buildings.set(building, []);
-          buildings.get(building).push(session);
+          const groupName = state.sortBy === "sessionType"
+            ? (session.sessionType || session.eyebrow || "Session").trim()
+            : getBroadLocation(session.location);
+          if (!groups.has(groupName)) groups.set(groupName, []);
+          groups.get(groupName).push(session);
         }
 
         const laneWidth = 170;
-        const buildingPlans = [...buildings.entries()]
+        const buildingPlans = [...groups.entries()]
           .sort((a, b) => {
-            const priority = (name) => name === "Chase Center" ? 0 : 1;
+            const priority = (name) => state.sortBy === "location" && name === "Chase Center" ? 0 : 1;
             return priority(a[0]) - priority(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]);
           })
           .map(([name, sessions]) => {
@@ -859,23 +1021,34 @@
             const width = plan.laneCount === 1 ? plan.width - 16 : laneWidth - 10;
             const index = sessionIndex.get(session);
             const clashes = conflicts.get(index) || [];
-            const clashTitles = clashes.slice(0, 3).map((clashIndex) => daySessions[clashIndex].title).join('; ');
             const sessionType = session.sessionType || session.eyebrow || 'Session';
-            const tooltip = [
-              session.title,
-              `${formatTime(session.start)}–${formatTime(session.end)} (${formatDuration(session.start, session.end)})`,
-              session.location || 'Location TBD',
-              clashes.length ? `Conflicts with ${clashes.length}: ${clashTitles}${clashes.length > 3 ? '…' : ''}` : 'No direct conflicts'
-            ].join('\n');
+            const sessionCode = session.sessionCode || '';
+            const recordingStatus = (session.viewingOptions || []).find((option) =>
+              option === 'Will be recorded' || option === 'Will not be recorded'
+            );
+            const recordingIcon = recordingStatus ? `
+              <span class="event-recording${recordingStatus === 'Will not be recorded' ? ' not-recorded' : ''}" role="img" aria-label="${escapeAttr(recordingStatus)}" title="${escapeAttr(recordingStatus)}">
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <rect x="1.5" y="4" width="8.5" height="8" rx="1.5"></rect>
+                  <path d="m10 6.5 4-2v7l-4-2"></path>
+                  ${recordingStatus === 'Will not be recorded' ? '<path d="M2 14 14 2"></path>' : ''}
+                </svg>
+              </span>` : '';
+            const sessionKey = getSessionKey(session);
+            const isSelected = state.selectedSessions.has(sessionKey);
+            const tooltip = session.title;
             return `
-              <article class="event-block${clashes.length ? ' has-conflict' : ''}${height < 64 ? ' compact' : ''}" data-start="${new Date(session.start).getTime()}" data-end="${new Date(session.end || session.start).getTime()}" style="top:${top}px;height:${height}px;left:${left}px;width:${width}px;" title="${escapeAttr(tooltip)}">
+              <article class="event-block${clashes.length ? ' has-conflict' : ''}${height < 64 ? ' compact' : ''}${isSelected ? ' is-selected' : ''}" data-start="${new Date(session.start).getTime()}" data-end="${new Date(session.end || session.start).getTime()}" style="top:${top}px;height:${height}px;left:${left}px;width:${width}px;--title-lines:${Math.max(1, Math.floor((height - 42) / 15))};" title="${escapeAttr(tooltip)}">
+                <button class="event-select-button" type="button" data-session-key="${escapeAttr(sessionKey)}" aria-label="${isSelected ? 'Remove from' : 'Add to'} my sessions: ${escapeAttr(session.title)}" aria-pressed="${isSelected}" title="${isSelected ? 'Remove from' : 'Add to'} my sessions">${isSelected ? '✓' : '+'}</button>
                 <div class="event-top">
                   <span class="event-time">${formatClock(session.start)}–${formatClock(session.end)}</span>
                   <span class="event-duration">${formatDurationShort(session.start, session.end)}</span>
                 </div>
                 <h4><a href="${escapeAttr(getSessionUrl(session))}" target="_blank" rel="noreferrer">${escapeHtml(session.title)}</a></h4>
                 <div class="event-meta">
-                  <span>${escapeHtml(sessionType)}</span>
+                  ${recordingIcon}
+                  <span class="event-type">${escapeHtml(sessionType)}</span>
+                  ${sessionCode ? `<span class="event-session-code">${escapeHtml(sessionCode)}</span>` : ''}
                 </div>
               </article>
             `;
@@ -898,6 +1071,8 @@
       }
 
       function renderPlanner() {
+        updateSelectionFilter();
+        updateSessionCodeWarning();
         const filtered = getFilteredSessions();
         state.filtered = filtered;
 
@@ -907,11 +1082,13 @@
         const daySessions = state.selectedDate
           ? filtered.filter((session) => getEventDateKey(session.start) === state.selectedDate)
           : [];
-        document.getElementById("session-count").textContent = `${daySessions.length} session${daySessions.length === 1 ? "" : "s"}`;
+        updateSessionSummary(daySessions);
 
         if (!filtered.length) {
-          document.getElementById("agenda").innerHTML = '<div class="empty">No scheduled sessions match the current filter.</div>';
-          document.getElementById("date-range").textContent = "No scheduled sessions";
+          const emptyMessage = state.showSelectedOnly
+            ? "No selected sessions match the current filters."
+            : "No scheduled sessions match the current filter.";
+          document.getElementById("agenda").innerHTML = `<div class="empty">${emptyMessage}</div>`;
           return;
         }
 
@@ -921,7 +1098,6 @@
             <div class="planner-main">${calendarHtml}</div>
           </div>
         `;
-        updateDateRangeText();
       }
 
       function changeSelectedDate(delta) {
@@ -974,8 +1150,31 @@
 
       document.getElementById("search").addEventListener("input", renderPlanner);
       document.getElementById("session-type-filter").addEventListener("change", renderPlanner);
+      document.getElementById("sort-by").addEventListener("change", (event) => {
+        state.sortBy = event.target.value;
+        renderPlanner();
+      });
+
+      document.getElementById("selection-filter").addEventListener("click", () => {
+        state.showSelectedOnly = !state.showSelectedOnly;
+        renderPlanner();
+      });
 
       const agendaElement = document.getElementById("agenda");
+      agendaElement.addEventListener("click", (event) => {
+        const button = event.target.closest(".event-select-button");
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const key = button.dataset.sessionKey;
+        if (state.selectedSessions.has(key)) {
+          state.selectedSessions.delete(key);
+        } else {
+          state.selectedSessions.add(key);
+        }
+        saveSelectedSessions();
+        renderPlanner();
+      });
       agendaElement.addEventListener("mouseover", (event) => {
         const block = event.target.closest(".event-block");
         if (block) highlightConflicts(block);

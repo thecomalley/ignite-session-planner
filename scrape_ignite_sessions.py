@@ -75,6 +75,21 @@ def normalize_session(raw: dict[str, Any]) -> dict[str, Any] | None:
             tags.append(value)
 
     session_type = get_display_value(raw.get("sessionType"))
+    audience_types = [
+        value
+        for entry in raw.get("audienceTypes") or []
+        if (value := get_display_value(entry))
+    ]
+    session_levels = [
+        value
+        for entry in raw.get("sessionLevel") or []
+        if (value := get_display_value(entry))
+    ]
+    viewing_options = [
+        value
+        for entry in raw.get("viewingOptions") or []
+        if (value := get_display_value(entry))
+    ]
     speaker_names = clean_html_text(raw.get("speakerNames") or "")
     description = clean_html_text(raw.get("description") or raw.get("aiDescription") or "")
     content_areas = [get_display_value(item) for item in raw.get("contentArea") or []]
@@ -82,9 +97,11 @@ def normalize_session(raw: dict[str, Any]) -> dict[str, Any] | None:
 
     session_code = raw.get("sessionCode")
     session_id = raw.get("sessionId") or session_code or raw.get("localizedId") or raw.get("title")
+    session_instance_id = raw.get("sessionInstanceId")
+    session_url_id = session_instance_id or session_code
     session_url = (
-        f"https://ignite.microsoft.com/en-US/sessions/{session_code}"
-        if session_code
+        f"https://ignite.microsoft.com/en-US/sessions/{session_url_id}"
+        if session_url_id
         else "https://ignite.microsoft.com/en-US/sessions"
     )
 
@@ -102,7 +119,11 @@ def normalize_session(raw: dict[str, Any]) -> dict[str, Any] | None:
         "metadata": metadata,
         "abstract": description,
         "speakerNames": speaker_names,
+        "audienceTypes": audience_types,
+        "sessionLevel": session_levels,
+        "viewingOptions": viewing_options,
         "sessionCode": session_code,
+        "sessionInstanceId": session_instance_id,
         "sessionType": session_type,
         "source_file": "live-api",
     }
